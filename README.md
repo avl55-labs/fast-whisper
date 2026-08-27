@@ -32,15 +32,31 @@ Everything after that is offline.
 
 ## The floating panel
 
-While you speak, a small panel appears near the bottom of the screen: a microphone and a
-waveform that follows your voice, so you can see the app is listening. When you let the
-hotkey go it turns amber and keeps animating until the text lands in your window, which is
-the part that is otherwise invisible - transcription takes a few seconds and nothing on
-screen would tell you it is running.
+While you speak, a panel fades in at the top of the screen: a lattice of small gold grains
+that ripples with your voice, so you can see the app is listening. When you let the hotkey
+go the pattern changes to a wave travelling through the lattice and keeps moving until the
+text lands in your window - transcription takes a few seconds, and without it nothing on
+screen would tell you the app was still working.
 
 The panel never takes focus and clicks pass straight through it, so it cannot interfere
-with the window you are dictating into. Turn it off with *Show the floating panel* in the
-tray menu, or move it with `overlay_position` (`bottom`, `top`, `center`) in the settings.
+with the window you are dictating into. Turn it off or move it in *Settings -> General*.
+
+## Settings
+
+Right-click the tray icon and choose *Settings*. Six pages:
+
+- **General** - hotkey, hold or toggle, language, model, where the text goes, the panel,
+  sounds, launch at login.
+- **Sound** - microphone, silence trimming, the minimum and maximum length of a recording,
+  CPU threads.
+- **Models** - every model with its size, its measured latency and whether it is on disk.
+  Download and delete them here; the active one cannot be deleted.
+- **Vocabulary** - names and jargon the model should prefer. They are passed to Whisper as
+  context before each recording.
+- **History** - everything recognized so far, searchable. Click an entry to copy it.
+- **About** - version and the paths to the log and data folders.
+
+Anything set here is written to `%APPDATA%\FastWhisper\config.json` immediately.
 
 ## Choosing a hotkey
 

@@ -63,7 +63,7 @@ class Transcriber:
             beam_size=self.cfg.beam_size,
             vad_filter=self.cfg.vad,
             vad_parameters={"min_silence_duration_ms": 500},
-            initial_prompt=self.cfg.prompt or None,
+            initial_prompt=self.cfg.initial_prompt(),
             condition_on_previous_text=False,
         )
         return " ".join(segment.text.strip() for segment in segments).strip()

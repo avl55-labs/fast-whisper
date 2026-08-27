@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
 APP_NAME = "FastWhisper"
@@ -47,7 +47,7 @@ class Config:
     # Floating panel that shows recording and transcription progress.
     overlay: bool = True
     # Where the panel sits: "bottom", "top" or "center".
-    overlay_position: str = "bottom"
+    overlay_position: str = "top"
     # Trim silence around speech before transcribing.
     vad: bool = True
     # Recordings shorter than this are discarded as accidental key presses.
@@ -62,6 +62,8 @@ class Config:
     save_history: bool = True
     # Optional prompt that biases the model towards your terms and names.
     prompt: str = ""
+    # Names and jargon the model should prefer; joined into the prompt before each run.
+    vocabulary: list[str] = field(default_factory=list)
     # Decoding beams. 1 is marginally faster, 5 is a little more accurate.
     beam_size: int = 5
 
@@ -84,6 +86,15 @@ class Config:
         CONFIG_PATH.write_text(
             json.dumps(asdict(self), ensure_ascii=False, indent=2), encoding="utf-8"
         )
+
+    def initial_prompt(self) -> str | None:
+        """Vocabulary and prompt, combined into the context Whisper sees."""
+        parts = []
+        if self.vocabulary:
+            parts.append(", ".join(self.vocabulary))
+        if self.prompt:
+            parts.append(self.prompt)
+        return ". ".join(parts) if parts else None
 
     def threads(self) -> int:
         if self.cpu_threads > 0:

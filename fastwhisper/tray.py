@@ -85,10 +85,11 @@ class Tray:
         return Menu(
             MenuItem(lambda _: self._title(), None, enabled=False),
             Menu.SEPARATOR,
+            MenuItem("Settings...", self._open_settings, default=True),
             MenuItem(
                 "Hotkey",
                 Menu(
-                    MenuItem("Set a custom key...", self._capture_hotkey, default=True),
+                    MenuItem("Set a custom key...", self._capture_hotkey),
                     Menu.SEPARATOR,
                     *[
                         MenuItem(
@@ -235,6 +236,12 @@ class Tray:
             threading.Thread(target=reload, daemon=True).start()
 
         return action
+
+    def _open_settings(self) -> None:
+        if self.ui is None:
+            _open(CONFIG_PATH)
+            return
+        self.ui.open_settings(self.app, self._capture_hotkey)
 
     def _capture_hotkey(self) -> None:
         """Opens the capture window, with the current hotkey disarmed meanwhile."""

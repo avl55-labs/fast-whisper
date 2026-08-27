@@ -12,13 +12,15 @@ from __future__ import annotations
 
 import ctypes
 import logging
-import math
 import queue
 import tkinter as tk
 from collections import deque
 from typing import Callable
 
+from PIL import ImageTk
+
 from .config import Config
+from .grains import COLUMNS, HEIGHT, WIDTH, GrainField, chroma_hex
 
 log = logging.getLogger(__name__)
 
@@ -27,29 +29,9 @@ WS_EX_NOACTIVATE = 0x08000000
 WS_EX_TOOLWINDOW = 0x00000080
 WS_EX_TRANSPARENT = 0x00000020
 
-# Any colour that does not appear in the design; these pixels become fully transparent.
-CHROMA = "#ff00fe"
-
-WIDTH, HEIGHT = 320, 96
-BAR_COUNT = 16
 FRAME_MS = 33
-
-PANEL = "#1b1c20"
-BORDER = "#33353d"
-CAPTION = "#8b8f9a"
-ACCENT = {
-    "recording": "#f2565b",
-    "processing": "#e6a33c",
-}
-
-
-def _rounded_points(x0: float, y0: float, x1: float, y1: float, r: float) -> list[float]:
-    """Polygon outline of a rounded rectangle, smoothed by the canvas."""
-    return [
-        x0 + r, y0, x1 - r, y0, x1, y0, x1, y0 + r,
-        x1, y1 - r, x1, y1, x1 - r, y1, x0 + r, y1,
-        x0, y1, x0, y1 - r, x0, y0 + r, x0, y0,
-    ]
+MARGIN = 26  # distance from the top edge of the screen
+ALPHA = 0.88
 
 
 class Overlay:
@@ -59,108 +41,42 @@ class Overlay:
         self.cfg = cfg
         self.level_of = level_of
         self.state = "hidden"
+        self.field = GrainField()
         self._phase = 0.0
         self._alpha = 0.0
         self._target_alpha = 0.0
-        self._levels: deque[float] = deque([0.0] * BAR_COUNT, maxlen=BAR_COUNT)
+        self._levels: deque[float] = deque([0.0] * COLUMNS, maxlen=COLUMNS)
         self._styled = False
+        self._photo: ImageTk.PhotoImage | None = None
 
+        chroma = chroma_hex()
         self.win = tk.Toplevel(root)
         self.win.withdraw()
         self.win.overrideredirect(True)
         self.win.attributes("-topmost", True)
         self.win.attributes("-alpha", 0.0)
-        self.win.configure(bg=CHROMA)
+        self.win.configure(bg=chroma)
         try:
-            self.win.attributes("-transparentcolor", CHROMA)
+            self.win.attributes("-transparentcolor", chroma)
         except tk.TclError:
             log.debug("transparent colour is unavailable, corners will be square")
 
         self.canvas = tk.Canvas(
-            self.win, width=WIDTH, height=HEIGHT, bg=CHROMA, highlightthickness=0
+            self.win, width=WIDTH, height=HEIGHT, bg=chroma, highlightthickness=0
         )
         self.canvas.pack()
-        self._build()
-
-    # ---------- drawing ----------
-
-    def _build(self) -> None:
-        self.canvas.create_polygon(
-            _rounded_points(4, 4, WIDTH - 4, HEIGHT - 4, 20),
-            smooth=True,
-            fill=PANEL,
-            outline=BORDER,
-            width=1,
-            tags="panel",
-        )
-
-        # Microphone glyph on the left.
-        self.mic_parts = [
-            self.canvas.create_oval(27, 18, 43, 40, fill=ACCENT["recording"], outline=""),
-            self.canvas.create_rectangle(27, 26, 43, 34, fill=ACCENT["recording"], outline=""),
-            self.canvas.create_arc(
-                21, 26, 49, 48, start=180, extent=180, style=tk.ARC,
-                outline=ACCENT["recording"], width=3,
-            ),
-            self.canvas.create_rectangle(33, 44, 37, 52, fill=ACCENT["recording"], outline=""),
-        ]
-
-        # Waveform bars.
-        self.bars = []
-        left, right = 68, WIDTH - 26
-        step = (right - left) / BAR_COUNT
-        for index in range(BAR_COUNT):
-            x = left + index * step
-            self.bars.append(
-                self.canvas.create_rectangle(
-                    x, 30, x + step - 4, 38, fill=ACCENT["recording"], outline=""
-                )
-            )
-
-        self.caption = self.canvas.create_text(
-            WIDTH / 2,
-            HEIGHT - 22,
-            text="",
-            fill=CAPTION,
-            font=("Segoe UI", 9),
-        )
-
-    def _paint(self) -> None:
-        colour = ACCENT.get(self.state, ACCENT["recording"])
-        for item in self.mic_parts:
-            if self.canvas.type(item) == "arc":
-                self.canvas.itemconfigure(item, outline=colour)
-            else:
-                self.canvas.itemconfigure(item, fill=colour)
-
-        centre = 34
-        left, right = 68, WIDTH - 26
-        step = (right - left) / BAR_COUNT
-        for index, bar in enumerate(self.bars):
-            if self.state == "recording":
-                value = self._levels[index]
-            else:
-                # A travelling wave, so it is obvious the app is still working.
-                value = 0.18 + 0.42 * abs(math.sin(self._phase + index * 0.42))
-            height = max(2.0, value * 22)
-            x = left + index * step
-            self.canvas.coords(bar, x, centre - height, x + step - 4, centre + height)
-            self.canvas.itemconfigure(bar, fill=colour)
+        self.image_item = self.canvas.create_image(0, 0, anchor="nw")
 
     # ---------- state ----------
 
     def show(self, state: str) -> None:
         if state == self.state:
             return
-        self.state = state
-        self.canvas.itemconfigure(
-            self.caption,
-            text="Listening - Esc to cancel" if state == "recording" else "Transcribing...",
-        )
         if state == "recording":
-            self._levels = deque([0.0] * BAR_COUNT, maxlen=BAR_COUNT)
+            self._levels = deque([0.0] * COLUMNS, maxlen=COLUMNS)
+        self.state = state
         self._place()
-        self._target_alpha = 0.96
+        self._target_alpha = ALPHA
         self.win.deiconify()
         self._apply_styles()
 
@@ -172,12 +88,12 @@ class Overlay:
         screen_w = self.win.winfo_screenwidth()
         screen_h = self.win.winfo_screenheight()
         x = int((screen_w - WIDTH) / 2)
-        if self.cfg.overlay_position == "top":
-            y = 80
+        if self.cfg.overlay_position == "bottom":
+            y = screen_h - HEIGHT - 140
         elif self.cfg.overlay_position == "center":
             y = int((screen_h - HEIGHT) / 2)
         else:
-            y = screen_h - HEIGHT - 140
+            y = MARGIN
         self.win.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
 
     def _apply_styles(self) -> None:
@@ -201,22 +117,29 @@ class Overlay:
     # ---------- animation ----------
 
     def tick(self) -> None:
+        if self.state == "hidden" and self._alpha <= 0.02:
+            return
+
+        self._phase += 0.14
         if self.state == "recording":
             # Speech rarely exceeds an RMS of ~0.08, so scale it into a visible range.
             self._levels.appendleft(min(1.0, self.level_of() * 11.0))
-        else:
-            self._phase += 0.32
 
-        if self.state != "hidden" or self._alpha > 0.01:
-            self._paint()
+        state = self.state if self.state != "hidden" else "processing"
+        try:
+            frame = self.field.render(state, self._phase, list(self._levels))
+            self._photo = ImageTk.PhotoImage(frame)
+            self.canvas.itemconfigure(self.image_item, image=self._photo)
+        except Exception:
+            log.exception("frame rendering failed")
 
         if abs(self._alpha - self._target_alpha) > 0.01:
-            self._alpha += (self._target_alpha - self._alpha) * 0.35
+            self._alpha += (self._target_alpha - self._alpha) * 0.3
             try:
                 self.win.attributes("-alpha", max(0.0, min(1.0, self._alpha)))
             except tk.TclError:
                 pass
-            if self._alpha < 0.02 and self._target_alpha == 0.0:
+            if self._alpha < 0.03 and self._target_alpha == 0.0:
                 self.win.withdraw()
 
 
@@ -255,6 +178,12 @@ class UiHost:
         from .hotkey_capture import HotkeyCapture
 
         self.post(lambda: HotkeyCapture(self.root, self.cfg, on_save, on_close))
+
+    def open_settings(self, app, capture: Callable[[], None]) -> None:  # noqa: ANN001
+        """Opens the settings window on the Tk thread."""
+        from .settings_window import SettingsWindow
+
+        self.post(lambda: SettingsWindow.open(self.root, self.cfg, app, capture))
 
     def _pump(self) -> None:
         while True:
