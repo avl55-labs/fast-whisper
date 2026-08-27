@@ -56,6 +56,13 @@ What changed, newest first. Dates are the day the work landed on `main`.
 - Audio that comes back at digital silence reports the microphone instead of quietly
   recognizing nothing.
 
+**Deployment**
+
+- An MSI for Group Policy and Intune, next to the per-user installer. It installs for the
+  whole machine, needs no interface and takes two properties: `AUTOSTART=1` to start for
+  every user who signs in, and `MODELDIR` to point them all at one model directory rather
+  than a copy per profile, which is half a gigabyte each.
+
 **Application**
 
 - A second launch exits quietly instead of stacking a modal dialog on top of a tray app.

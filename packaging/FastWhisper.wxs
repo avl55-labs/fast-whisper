@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-machine MSI, for deployment through Group Policy or Intune.
+
+  Group Policy software installation runs as SYSTEM with no user present, so the package
+  must install for the whole machine, need no interface and ask no questions. The Inno
+  Setup installer next to this one stays the right choice for a single person installing
+  it themselves: it needs no administrator rights and puts everything under the profile.
+
+  Build:   packaging\build-msi.ps1
+  Deploy:  msiexec /i FastWhisper-0.1.0.msi /qn
+           msiexec /i FastWhisper-0.1.0.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+  Remove:  msiexec /x FastWhisper-0.1.0.msi /qn
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <?define ProductName = "FastWhisper" ?>
+  <?define ProductVersion = "0.1.0" ?>
+  <?define Manufacturer = "avl55-labs" ?>
+
+  <Package
+      Name="$(ProductName)"
+      Manufacturer="$(Manufacturer)"
+      Version="$(ProductVersion)"
+      UpgradeCode="7f2b6c4e-9a1d-4d0b-8c3f-5b2e1a7d4c60"
+      Scope="perMachine"
+      Compressed="yes"
+      InstallerVersion="500">
+
+    <SummaryInformation Description="Offline dictation for Windows" />
+
+    <MajorUpgrade
+        AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer version of $(ProductName) is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Shown in Apps and Features. -->
+    <Icon Id="AppIcon" SourceFile="app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/avl55-labs/fast-whisper" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <!-- Deployment switches. Both default to off, so a plain /qn install changes nothing
+         outside the program directory. -->
+    <Property Id="AUTOSTART" Value="0" />
+    <Property Id="MODELDIR" Secure="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="$(ProductName)" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ShortcutFolder" Name="$(ProductName)" />
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="$(ProductName)" Level="1">
+      <ComponentGroupRef Id="ApplicationFiles" />
+      <ComponentGroupRef Id="ApplicationExtras" />
+    </Feature>
+
+    <ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
+      <!-- Harvests the PyInstaller output, keeping its directory layout. -->
+      <Files Include="..\dist\FastWhisper\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="ApplicationExtras">
+      <Component Id="StartMenuShortcut" Directory="ShortcutFolder" Guid="a1c9f0d2-3b7e-4f56-9d18-6c2a4e8b1f33">
+        <Shortcut
+            Id="AppShortcut"
+            Name="$(ProductName)"
+            Description="Offline dictation"
+            Target="[INSTALLFOLDER]FastWhisper.exe"
+            WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveShortcutFolder" Directory="ShortcutFolder" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="Software\$(Manufacturer)\$(ProductName)"
+                       Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <!-- Starts for every user who signs in. Off unless AUTOSTART=1 is passed. -->
+      <Component Id="MachineAutostart" Directory="INSTALLFOLDER" Guid="c4e7a218-5d93-4a61-b0f2-91d7c3e5b84a" Condition="AUTOSTART = 1">
+        <RegistryValue
+            Root="HKLM"
+            Key="Software\Microsoft\Windows\CurrentVersion\Run"
+            Name="$(ProductName)"
+            Type="string"
+            Value="&quot;[INSTALLFOLDER]FastWhisper.exe&quot;"
+            KeyPath="yes" />
+      </Component>
+
+      <!-- A shared model directory. Without it every user downloads their own copy of the
+           speech model into their profile, which is around half a gigabyte each. -->
+      <Component Id="SharedModelDir" Directory="INSTALLFOLDER" Guid="e8b3d571-2f46-4c9a-8e17-3a5b6d0c9f42" Condition="MODELDIR">
+        <RegistryValue
+            Root="HKLM"
+            Key="Software\$(Manufacturer)\$(ProductName)"
+            Name="ModelDir"
+            Type="string"
+            Value="[MODELDIR]"
+            KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Package>
+</Wix>

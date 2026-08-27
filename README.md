@@ -53,6 +53,32 @@ Download `FastWhisper-x.y.z-setup.exe` from [Releases][rel] and run it. The inst
 per-user: it writes to `%LOCALAPPDATA%\Programs\FastWhisper`, needs no admin rights and
 raises no UAC prompt. It can optionally add FastWhisper to startup.
 
+### Deploying to a domain
+
+`FastWhisper-x.y.z.msi` on the same page is a per-machine package for Group Policy or
+Intune. It installs into `%ProgramFiles%\FastWhisper`, needs no interface and asks no
+questions:
+
+```powershell
+msiexec /i FastWhisper-0.1.0.msi /qn
+```
+
+Two properties are worth setting for a fleet:
+
+| Property | Effect |
+| --- | --- |
+| `AUTOSTART=1` | Starts FastWhisper for every user who signs in, through `HKLM\...\Run`. |
+| `MODELDIR=<path>` | Points every user at one model directory instead of downloading a copy per profile. |
+
+```powershell
+msiexec /i FastWhisper-0.1.0.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+```
+
+The shared directory has to be writable by whoever downloads a model first, and readable
+by everyone else. Each user still keeps their own settings and history under `%APPDATA%`,
+so hotkeys and vocabulary do not leak between accounts. Uninstall with
+`msiexec /x FastWhisper-0.1.0.msi /qn`.
+
 On the first launch the app downloads the Whisper model (~0.5 GB for the default `small`)
 into `%USERPROFILE%\.cache\huggingface`. The tray icon stays blue while that happens.
 Everything after that is offline.
@@ -201,4 +227,5 @@ MIT. See [LICENSE](LICENSE).
 [fw]: https://github.com/SYSTRAN/faster-whisper
 [kb]: https://github.com/boppreh/keyboard#api
 [inno]: https://jrsoftware.org/isinfo.php
+[wix]: https://wixtoolset.org/
 [rel]: https://github.com/avl55-labs/fast-whisper/releases

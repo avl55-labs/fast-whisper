@@ -16,6 +16,31 @@ from .single_instance import acquire
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
 
+MACHINE_KEY = r"Software\avl55-labs\FastWhisper"
+
+
+def apply_machine_settings() -> None:
+    """Reads the settings a domain deployment writes for every user.
+
+    The MSI can point the whole machine at one model directory. Without it each user
+    downloads their own copy of the speech model into their profile, which is half a
+    gigabyte or more per person. Set before anything imports the model runtime, because
+    the cache location is read at import time.
+    """
+    try:
+        import winreg
+    except ImportError:
+        return
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, MACHINE_KEY) as key:
+            model_dir, _ = winreg.QueryValueEx(key, "ModelDir")
+    except OSError:
+        return
+    if model_dir:
+        # An explicit environment variable still wins, so a user can opt out.
+        os.environ.setdefault("HF_HOME", str(model_dir))
+
+
 def setup_logging() -> None:
     handler = logging.handlers.RotatingFileHandler(
         LOG_PATH, maxBytes=512_000, backupCount=2, encoding="utf-8"
@@ -36,6 +61,7 @@ def message_box(text: str, title: str = "FastWhisper") -> None:
 
 
 def main() -> int:
+    apply_machine_settings()
     setup_logging()
     log = logging.getLogger("fastwhisper")
 
