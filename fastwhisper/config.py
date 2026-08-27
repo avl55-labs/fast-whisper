@@ -38,6 +38,8 @@ class Config:
     compute_type: str = "int8"
     # Recognition language: "ru", "en", ... or "auto" to detect per recording.
     language: str = "ru"
+    # Interface language: "auto" follows Windows, otherwise "ru" or "en".
+    ui_language: str = "auto"
     # What to do with the text: "paste" into the focused window, "type" it, or "clipboard" only.
     output: str = "paste"
     # Leave the dictated text on the clipboard, so a missed paste is not a lost sentence.

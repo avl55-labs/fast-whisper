@@ -71,7 +71,12 @@ def main() -> int:
         return 0
 
     cfg = Config.load()
-    log.info("starting FastWhisper (model=%s, hotkey=%s)", cfg.model, cfg.hotkey)
+    from .i18n import set_language
+
+    language = set_language(cfg.ui_language)
+    log.info(
+        "starting FastWhisper (model=%s, hotkey=%s, ui=%s)", cfg.model, cfg.hotkey, language
+    )
 
     from .app import FastWhisperApp
     from .overlay import UiHost

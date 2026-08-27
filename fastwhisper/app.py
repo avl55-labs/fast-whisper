@@ -10,6 +10,7 @@ from . import history, sounds
 from .audio import SILENCE_PEAK, Recorder, RecordingError, duration, normalize, peak
 from .config import Config
 from .hotkey import HotkeyError, HotkeyListener
+from .i18n import _
 from .output import deliver
 from .transcriber import Transcriber
 
@@ -37,10 +38,10 @@ class FastWhisperApp:
         if preload:
             self.preload()
         else:
-            self._set_state("idle", "Choose a model to begin")
+            self._set_state("idle", _("Choose a model to begin"))
 
     def preload(self) -> None:
-        self._set_state("loading", "Loading the model...")
+        self._set_state("loading", _("Loading the model..."))
         threading.Thread(target=self._preload, daemon=True).start()
 
     def _preload(self) -> None:
@@ -48,7 +49,7 @@ class FastWhisperApp:
             self.transcriber.load()
         except Exception as exc:
             log.exception("model failed to load")
-            self._set_state("error", f"Model error: {exc}")
+            self._set_state("error", _("Model error: {error}").format(error=exc))
             return
         self._set_state("idle", self.ready_hint())
 
@@ -80,8 +81,8 @@ class FastWhisperApp:
             self._set_state("idle", self.ready_hint())
 
     def ready_hint(self) -> str:
-        action = "Hold" if self.cfg.mode == "hold" else "Press"
-        return f"{action} {self.cfg.hotkey.upper()} and speak"
+        template = "Hold {key} and speak" if self.cfg.mode == "hold" else "Press {key} and speak"
+        return _(template).format(key=self.cfg.hotkey.upper())
 
     # ---------- recording ----------
 
@@ -102,7 +103,7 @@ class FastWhisperApp:
             return
         if self.cfg.beep:
             sounds.start()
-        self._set_state("recording", "Recording...")
+        self._set_state("recording", _("Recording..."))
 
     def cancel_recording(self) -> None:
         if not self.recorder.is_recording:
@@ -111,7 +112,7 @@ class FastWhisperApp:
         self._release()
         if self.cfg.beep:
             sounds.error()
-        self._set_state("idle", "Cancelled. " + self.ready_hint())
+        self._set_state("idle", _("Cancelled.") + " " + self.ready_hint())
 
     def stop_recording(self) -> None:
         if not self.recorder.is_recording:
@@ -131,11 +132,13 @@ class FastWhisperApp:
             log.warning("captured %.1fs at peak %.5f - the microphone gave nothing", seconds, level)
             self._release()
             sounds.error()
-            self._set_state("error", "Microphone is silent - check the input device")
+            self._set_state("error", _("Microphone is silent - check the input device"))
             return
         if self.cfg.auto_gain:
             audio = normalize(audio)
-        self._set_state("working", f"Transcribing {seconds:.1f}s...")
+        self._set_state(
+            "working", _("Transcribing {seconds}s...").format(seconds=f"{seconds:.1f}")
+        )
         threading.Thread(target=self._transcribe, args=(audio, seconds), daemon=True).start()
 
     def _transcribe(self, audio, seconds: float) -> None:  # noqa: ANN001
@@ -145,7 +148,7 @@ class FastWhisperApp:
         except Exception as exc:
             log.exception("transcription failed")
             sounds.error()
-            self._set_state("error", f"Transcription failed: {exc}")
+            self._set_state("error", _("Transcription failed: {error}").format(error=exc))
             self._release()
             return
         elapsed = time.perf_counter() - started
@@ -157,7 +160,7 @@ class FastWhisperApp:
                 deliver(text, self.cfg.output, keep_clipboard=self.cfg.keep_clipboard)
             except Exception as exc:
                 log.exception("could not deliver the text")
-                self._set_state("error", f"Output failed: {exc}")
+                self._set_state("error", _("Output failed: {error}").format(error=exc))
                 self._release()
                 return
             if self.cfg.save_history:
@@ -165,7 +168,7 @@ class FastWhisperApp:
             detail = text if len(text) <= 60 else text[:57] + "..."
             self._set_state("idle", detail)
         else:
-            self._set_state("idle", "Nothing recognized. " + self.ready_hint())
+            self._set_state("idle", _("Nothing recognized.") + " " + self.ready_hint())
         self._release()
 
     def _release(self) -> None:

@@ -14,6 +14,7 @@ from typing import Callable
 
 from . import models
 from .config import Config
+from .i18n import _
 from .widgets import (
     ACCENT,
     BG,
@@ -67,11 +68,11 @@ class SetupWindow:
         header = tk.Frame(self.win, bg=BG)
         header.pack(fill="x", padx=32, pady=(26, 4))
         tk.Label(
-            header, text="Choose a speech model", bg=BG, fg=TEXT, font=FONT_TITLE, anchor="w"
+            header, text=_("Choose a speech model"), bg=BG, fg=TEXT, font=FONT_TITLE, anchor="w"
         ).pack(fill="x")
         tk.Label(
             header,
-            text=(
+            text=_(
                 "It runs on this computer - nothing is uploaded. Bigger models understand "
                 "more and make you wait longer. This one is downloaded once."
             ),
@@ -87,15 +88,15 @@ class SetupWindow:
         footer.pack(fill="x", padx=32, pady=(6, 24))
         tk.Label(
             footer,
-            text=(
+            text=_(
                 "You can change this later in Settings, where five more models are waiting, "
                 "including English-only ones that are faster at the same accuracy."
             ),
             bg=BG, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=430,
         ).pack(side="left", fill="x", expand=True)
 
-        Button(footer, "Use this model", self._confirm, primary=True).pack(side="right")
-        Button(footer, "Decide later", self._later).pack(side="right", padx=(0, 8))
+        Button(footer, _("Use this model"), self._confirm, primary=True).pack(side="right")
+        Button(footer, _("Decide later"), self._later).pack(side="right", padx=(0, 8))
 
     def _option(self, parent: tk.Frame, info: models.ModelInfo) -> None:
         frame = tk.Frame(parent, bg=CARD, highlightthickness=2, highlightbackground=BORDER,
@@ -108,7 +109,7 @@ class SetupWindow:
         title_line = tk.Frame(left, bg=CARD)
         title_line.pack(fill="x")
         pill = tk.Label(
-            title_line, text=info.tier.upper(), bg=CARD, fg=TIER_COLORS.get(info.tier, MUTED),
+            title_line, text=_(info.tier).upper(), bg=CARD, fg=TIER_COLORS.get(info.tier, MUTED),
             font=("Segoe UI Semibold", 8),
         )
         pill.pack(side="left", padx=(0, 8))
@@ -117,21 +118,24 @@ class SetupWindow:
         name.pack(side="left")
 
         purpose = tk.Label(
-            left, text=info.purpose, bg=CARD, fg=MUTED, font=FONT_SMALL,
+            left, text=_(info.purpose), bg=CARD, fg=MUTED, font=FONT_SMALL,
             anchor="w", justify="left", wraplength=380,
         )
         purpose.pack(fill="x", pady=(3, 0))
 
         right = tk.Frame(frame, bg=CARD)
         right.pack(side="right", padx=16, pady=11)
-        for label, value in (("Accuracy", info.accuracy), ("Speed", info.speed)):
+        for label, value in ((_("Accuracy"), info.accuracy), (_("Speed"), info.speed)):
             line = tk.Frame(right, bg=CARD)
             line.pack(anchor="e", pady=1)
             tk.Label(line, text=label, bg=CARD, fg=MUTED, font=FONT_SMALL, width=8,
                      anchor="e").pack(side="left")
             Gauge(line, value).pack(side="left", padx=(6, 0))
         meta = tk.Label(
-            right, text=f"{info.size_gb:.2f} GB  -  {info.latency} per phrase",
+            right,
+            text=_("{size} GB  -  {latency} per phrase").format(
+                size=f"{info.size_gb:.2f}", latency=info.latency
+            ),
             bg=CARD, fg=MUTED, font=FONT_SMALL, anchor="e",
         )
         meta.pack(anchor="e", pady=(4, 0))

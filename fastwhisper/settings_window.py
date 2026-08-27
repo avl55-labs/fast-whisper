@@ -15,6 +15,8 @@ from typing import Callable
 
 from . import audio, autostart, history, models, output
 from .config import CONFIG_PATH, LOG_PATH, Config, app_dir
+from . import i18n
+from .i18n import _
 from PIL import ImageTk
 
 from .widgets import (
@@ -50,6 +52,7 @@ PAGES = [
     ("about", "About"),
 ]
 
+UI_LANGUAGES = [("Follow Windows", "auto"), ("Русский", "ru"), ("English", "en")]
 MODES = [("Hold to talk", "hold"), ("Toggle on and off", "toggle")]
 LANGUAGES = [("Russian", "ru"), ("English", "en"), ("Detect automatically", "auto")]
 OUTPUTS = [
@@ -62,22 +65,37 @@ MIN_SECONDS = [("0.2 s", 0.2), ("0.4 s", 0.4), ("0.7 s", 0.7), ("1.0 s", 1.0)]
 MAX_SECONDS = [("1 minute", 60.0), ("5 minutes", 300.0), ("15 minutes", 900.0)]
 
 
+def translated(options):  # noqa: ANN001, ANN201
+    """Labels are translated here, not where the tables are declared: those run at import
+    time, before the language has been resolved."""
+    return [(_(label), value) for label, value in options]
+
+
 class SettingsWindow:
     """One instance at a time; `open` reuses the existing window if there is one."""
 
     _current: "SettingsWindow | None" = None
 
     @classmethod
-    def open(cls, root: tk.Tk, cfg: Config, app, capture: Callable[[], None]) -> None:  # noqa: ANN001
+    def open(  # noqa: ANN001
+        cls, root: tk.Tk, cfg: Config, app, capture: Callable[[], None],
+        on_language_change: Callable[[], None] | None = None, page: str = "general",
+    ) -> None:
         if cls._current is not None and cls._current.alive:
             cls._current.focus()
             return
-        cls._current = cls(root, cfg, app, capture)
+        cls._current = cls(root, cfg, app, capture, on_language_change, page)
 
-    def __init__(self, root: tk.Tk, cfg: Config, app, capture: Callable[[], None]) -> None:  # noqa: ANN001
+    def __init__(  # noqa: ANN001
+        self, root: tk.Tk, cfg: Config, app, capture: Callable[[], None],
+        on_language_change: Callable[[], None] | None = None, page: str = "general",
+    ) -> None:
         self.cfg = cfg
         self.app = app
         self.capture = capture
+        self.on_language_change = on_language_change
+        self.root = root
+        self.start_page = page
         self.alive = True
         self.pages: dict[str, tk.Frame] = {}
         self.nav_items: dict[str, tk.Label] = {}
@@ -92,13 +110,13 @@ class SettingsWindow:
 
         self._build_sidebar()
         self._build_body()
-        self.show("general")
+        self.show(self.start_page)
         self.focus()
 
     # ---------- chrome ----------
 
     def _build_sidebar(self) -> None:
-        bar = tk.Frame(self.win, bg=SIDEBAR, width=190)
+        bar = tk.Frame(self.win, bg=SIDEBAR, width=210)
         bar.pack(side="left", fill="y")
         bar.pack_propagate(False)
 
@@ -108,7 +126,7 @@ class SettingsWindow:
 
         for key, title in PAGES:
             item = tk.Label(
-                bar, text=title, bg=SIDEBAR, fg=TEXT, font=FONT,
+                bar, text=_(title), bg=SIDEBAR, fg=TEXT, font=FONT,
                 anchor="w", padx=14, pady=8, cursor="hand2",
             )
             item.pack(fill="x", padx=8, pady=1)
@@ -118,8 +136,8 @@ class SettingsWindow:
         footer = tk.Frame(bar, bg=SIDEBAR)
         footer.pack(side="bottom", fill="x", pady=16, padx=14)
         tk.Label(
-            footer, text="Offline. Free. No account.", bg=SIDEBAR, fg=MUTED, font=FONT_SMALL,
-            anchor="w", justify="left",
+            footer, text=_("Offline. Free. No account."), bg=SIDEBAR, fg=MUTED, font=FONT_SMALL,
+            anchor="w", justify="left", wraplength=180,
         ).pack(fill="x")
 
     def _build_body(self) -> None:
@@ -155,7 +173,7 @@ class SettingsWindow:
             self.pages[key] = area
         self.pages[key].pack(fill="both", expand=True)
         self.current = key
-        self.title_label.configure(text=dict(PAGES)[key])
+        self.title_label.configure(text=_(dict(PAGES)[key]))
 
         if key == "models":
             self._refresh_models()
@@ -179,7 +197,7 @@ class SettingsWindow:
 
     def _save(self) -> None:
         self.cfg.save()
-        self.status_label.configure(text="Saved")
+        self.status_label.configure(text=_("Saved"))
         self.win.after(1200, lambda: self.status_label.configure(text=""))
 
     def _setter(self, field: str) -> Callable[[object], None]:
@@ -192,105 +210,110 @@ class SettingsWindow:
     # ---------- pages ----------
 
     def _page_general(self, parent: tk.Frame) -> None:
-        section_label(parent, "DICTATION")
+        section_label(parent, _("DICTATION"))
         card = Card(parent)
 
-        _row, slot = card.row("Hotkey", "The key you hold, or press, to dictate")
+        _row, slot = card.row(_("Hotkey"), _("The key you hold, or press, to dictate"))
         self.hotkey_value = tk.Label(
             slot, text=self.cfg.hotkey.upper(), bg=CARD, fg=MUTED, font=FONT
         )
         self.hotkey_value.pack(side="left", padx=(0, 10))
-        Button(slot, "Change...", self._change_hotkey).pack(side="left")
+        Button(slot, _("Change..."), self._change_hotkey).pack(side="left")
 
-        _row, slot = card.row("Cancel a recording", "Discards it without recognizing anything")
+        _row, slot = card.row(_("Cancel a recording"), _("Discards it without recognizing anything"))
         tk.Label(slot, text="ESC", bg=CARD, fg=MUTED, font=FONT).pack()
 
-        _row, slot = card.row("Mode", "Hold the key while speaking, or press once to start")
-        Dropdown(slot, MODES, self.cfg.mode, self._set_mode).pack()
+        _row, slot = card.row(_("Mode"), _("Hold the key while speaking, or press once to start"))
+        Dropdown(slot, translated(MODES), self.cfg.mode, self._set_mode).pack()
 
-        _row, slot = card.row("Language", "Recognition is more accurate with a fixed language")
-        Dropdown(slot, LANGUAGES, self.cfg.language, self._setter("language")).pack()
+        _row, slot = card.row(_("Language"), _("Recognition is more accurate with a fixed language"))
+        Dropdown(slot, translated(LANGUAGES), self.cfg.language, self._setter("language")).pack()
 
-        _row, slot = card.row("Model", "Change and download models on the Models page")
+        _row, slot = card.row(_("Model"), _("Change and download models on the Models page"))
         options = [(item.title, item.name) for item in models.CATALOGUE]
         self.model_dropdown = Dropdown(slot, options, self.cfg.model, self._set_model)
         self.model_dropdown.pack()
 
-        section_label(parent, "TEXT")
+        section_label(parent, _("TEXT"))
         card = Card(parent)
-        _row, slot = card.row("Result", "Where the recognized text goes")
-        Dropdown(slot, OUTPUTS, self.cfg.output, self._setter("output")).pack()
+        _row, slot = card.row(_("Result"), _("Where the recognized text goes"))
+        Dropdown(slot, translated(OUTPUTS), self.cfg.output, self._setter("output")).pack()
 
         _row, slot = card.row(
-            "Leave it on the clipboard",
-            "So a paste that missed the window can still be pasted by hand",
+            _("Leave it on the clipboard"),
+            _("So a paste that missed the window can still be pasted by hand"),
         )
         Switch(slot, self.cfg.keep_clipboard, self._setter("keep_clipboard")).pack()
 
         _row, slot = card.row(
-            "Keep a history", f"Every result is appended to {history.HISTORY_PATH.name}"
+            _("Keep a history"), f"Every result is appended to {history.HISTORY_PATH.name}"
         )
         Switch(slot, self.cfg.save_history, self._setter("save_history")).pack()
 
-        section_label(parent, "FEEDBACK")
+        section_label(parent, _("FEEDBACK"))
         card = Card(parent)
         _row, slot = card.row(
-            "Floating panel", "Shows a live waveform while recording and while transcribing"
+            _("Floating panel"), _("Shows a live waveform while recording and while transcribing")
         )
         Switch(slot, self.cfg.overlay, self._setter("overlay")).pack()
 
-        _row, slot = card.row("Panel position", "")
-        Dropdown(slot, POSITIONS, self.cfg.overlay_position, self._setter("overlay_position")).pack()
+        _row, slot = card.row(_("Panel position"), "")
+        Dropdown(slot, translated(POSITIONS), self.cfg.overlay_position, self._setter("overlay_position")).pack()
 
-        _row, slot = card.row("Sound effects", "Short beeps when recording starts and stops")
+        _row, slot = card.row(_("Sound effects"), _("Short beeps when recording starts and stops"))
         Switch(slot, self.cfg.beep, self._setter("beep")).pack()
 
-        _row, slot = card.row("Notifications", "A tray balloon with the recognized text")
+        _row, slot = card.row(_("Notifications"), _("A tray balloon with the recognized text"))
         Switch(slot, self.cfg.notifications, self._setter("notifications")).pack()
 
-        section_label(parent, "APPLICATION")
+        section_label(parent, _("APPLICATION"))
         card = Card(parent)
-        _row, slot = card.row("Launch at login", "Start FastWhisper when you sign in to Windows")
+        _row, slot = card.row(_("Launch at login"), _("Start FastWhisper when you sign in to Windows"))
         Switch(slot, autostart.is_enabled(), self._set_autostart).pack()
 
-        _row, slot = card.row("Settings file", str(CONFIG_PATH))
-        Button(slot, "Open", lambda: _open(CONFIG_PATH)).pack()
+        _row, slot = card.row(
+            _("Interface language"), _("Follow Windows") if self.cfg.ui_language == "auto" else ""
+        )
+        Dropdown(slot, translated(UI_LANGUAGES), self.cfg.ui_language, self._set_ui_language).pack()
+
+        _row, slot = card.row(_("Settings file"), str(CONFIG_PATH))
+        Button(slot, _("Open"), lambda: _open(CONFIG_PATH)).pack()
 
     def _page_sound(self, parent: tk.Frame) -> None:
-        section_label(parent, "MICROPHONE")
+        section_label(parent, _("MICROPHONE"))
         card = Card(parent)
 
-        devices: list[tuple[str, object]] = [("System default", None)]
+        devices: list[tuple[str, object]] = [(_("System default"), None)]
         devices += [(name[:38], index) for index, name in audio.list_input_devices()]
-        _row, slot = card.row("Input device", "")
-        Dropdown(slot, devices, self.cfg.input_device, self._set_device, width=26).pack()
+        _row, slot = card.row(_("Input device"), "")
+        Dropdown(slot, devices, self.cfg.input_device, self._set_device).pack()
 
         _row, slot = card.row(
-            "Boost quiet recordings",
-            "Lifts a low input to a usable level before recognition",
+            _("Boost quiet recordings"),
+            _("Lifts a low input to a usable level before recognition"),
         )
         Switch(slot, self.cfg.auto_gain, self._setter("auto_gain")).pack()
 
         _row, slot = card.row(
-            "Silence removal", "Trims quiet parts before recognition, which is faster and cleaner"
+            _("Silence removal"), _("Trims quiet parts before recognition, which is faster and cleaner")
         )
         Switch(slot, self.cfg.vad, self._setter("vad")).pack()
 
-        section_label(parent, "LIMITS")
+        section_label(parent, _("LIMITS"))
         card = Card(parent)
         _row, slot = card.row(
-            "Ignore recordings shorter than", "Guards against an accidental tap on the hotkey"
+            _("Ignore recordings shorter than"), _("Guards against an accidental tap on the hotkey")
         )
-        Dropdown(slot, MIN_SECONDS, self.cfg.min_seconds, self._setter("min_seconds")).pack()
+        Dropdown(slot, translated(MIN_SECONDS), self.cfg.min_seconds, self._setter("min_seconds")).pack()
 
-        _row, slot = card.row("Stop recording after", "A safety net for a stuck key")
-        Dropdown(slot, MAX_SECONDS, self.cfg.max_seconds, self._set_max_seconds).pack()
+        _row, slot = card.row(_("Stop recording after"), _("A safety net for a stuck key"))
+        Dropdown(slot, translated(MAX_SECONDS), self.cfg.max_seconds, self._set_max_seconds).pack()
 
-        section_label(parent, "PERFORMANCE")
+        section_label(parent, _("PERFORMANCE"))
         card = Card(parent)
-        threads = [("Half the cores (default)", 0), ("4", 4), ("8", 8), ("16", 16)]
+        threads = [(_("Half the cores (default)"), 0), ("4", 4), ("8", 8), ("16", 16)]
         _row, slot = card.row(
-            "CPU threads", f"This machine has {os.cpu_count()} logical cores"
+            _("CPU threads"), f"This machine has {os.cpu_count()} logical cores"
         )
         Dropdown(slot, threads, self.cfg.cpu_threads, self._set_threads).pack()
 
@@ -307,7 +330,7 @@ class SettingsWindow:
 
         self.model_rows: dict[str, dict] = {}
         self._badges: list = []  # PhotoImages have to outlive this method
-        section_label(parent, "SPEECH MODELS")
+        section_label(parent, _("SPEECH MODELS"))
         card = Card(parent)
         for info in models.CATALOGUE:
             icon = ImageTk.PhotoImage(models.badge(info))
@@ -322,15 +345,15 @@ class SettingsWindow:
 
             gauge = tk.Frame(slot, bg=CARD)
             gauge.pack(side="left", padx=(0, 14))
-            tk.Label(gauge, text="Accuracy", bg=CARD, fg=MUTED, font=FONT_SMALL).pack()
+            tk.Label(gauge, text=_("Accuracy"), bg=CARD, fg=MUTED, font=FONT_SMALL).pack()
             Gauge(gauge, info.accuracy).pack(pady=(2, 0))
 
             state = tk.Label(slot, text="", bg=CARD, fg=MUTED, font=FONT_SMALL, width=9,
                              anchor="e")
             state.pack(side="left", padx=(0, 10))
-            action = Button(slot, "Download", lambda i=info: self._download(i))
+            action = Button(slot, _("Download"), lambda i=info: self._download(i))
             action.pack(side="left", padx=(0, 6))
-            remove = Button(slot, "Delete", lambda i=info: self._delete(i))
+            remove = Button(slot, _("Delete"), lambda i=info: self._delete(i))
             remove.pack(side="left")
             self.model_rows[info.name] = {
                 "state": state, "action": action, "remove": remove, "info": info,
@@ -367,9 +390,9 @@ class SettingsWindow:
 
         actions = tk.Frame(parent, bg=BG)
         actions.pack(fill="x", pady=10)
-        Button(actions, "Save", self._save_vocabulary, primary=True).pack(side="left")
+        Button(actions, _("Save"), self._save_vocabulary, primary=True).pack(side="left")
         tk.Label(
-            actions, text="Applies to the next recording.", bg=BG, fg=MUTED, font=FONT_SMALL
+            actions, text=_("Applies to the next recording."), bg=BG, fg=MUTED, font=FONT_SMALL
         ).pack(side="left", padx=12)
 
     def _page_history(self, parent: tk.Frame) -> None:
@@ -384,7 +407,7 @@ class SettingsWindow:
         entry.pack(side="left", fill="x", expand=True, ipady=5, padx=(0, 8))
         entry.insert(0, "")
         self.search_var.trace_add("write", lambda *_: self._refresh_history())
-        Button(top, "Refresh", self._refresh_history).pack(side="left")
+        Button(top, _("Refresh"), self._refresh_history).pack(side="left")
 
         self.history_box = tk.Frame(parent, bg=BG)
         self.history_box.pack(fill="both", expand=True)
@@ -392,18 +415,18 @@ class SettingsWindow:
     def _page_about(self, parent: tk.Frame) -> None:
         from . import __version__
 
-        section_label(parent, "ABOUT")
+        section_label(parent, _("ABOUT"))
         card = Card(parent)
-        _row, slot = card.row("Version", f"FastWhisper {__version__}")
-        _row, slot = card.row("Recognition", "faster-whisper on the CTranslate2 runtime")
-        _row, slot = card.row("Data folder", str(app_dir()))
-        Button(slot, "Open", lambda: _open(app_dir())).pack()
-        _row, slot = card.row("Log file", str(LOG_PATH))
-        Button(slot, "Open", lambda: _open(LOG_PATH)).pack()
+        _row, slot = card.row(_("Version"), f"FastWhisper {__version__}")
+        _row, slot = card.row(_("Recognition"), _("faster-whisper on the CTranslate2 runtime"))
+        _row, slot = card.row(_("Data folder"), str(app_dir()))
+        Button(slot, _("Open"), lambda: _open(app_dir())).pack()
+        _row, slot = card.row(_("Log file"), str(LOG_PATH))
+        Button(slot, _("Open"), lambda: _open(LOG_PATH)).pack()
 
-        section_label(parent, "PRIVACY")
+        section_label(parent, _("PRIVACY"))
         Card(parent).row(
-            "Nothing leaves this machine",
+            _("Nothing leaves this machine"),
             "Audio is held in memory and discarded after recognition. The only network "
             "request the app makes is downloading a model.",
         )
@@ -419,6 +442,19 @@ class SettingsWindow:
         except tk.TclError:
             pass
 
+    def _set_ui_language(self, value: object) -> None:
+        """Every visible label is built once, so the window is rebuilt to change them."""
+        self.cfg.ui_language = str(value)
+        self.cfg.save()
+        i18n.set_language(self.cfg.ui_language)
+        if self.on_language_change is not None:
+            self.on_language_change()
+        page, root, app = self.current, self.root, self.app
+        capture, callback = self.capture, self.on_language_change
+        cfg = self.cfg
+        self.close()
+        SettingsWindow.open(root, cfg, app, capture, callback, page)
+
     def _set_mode(self, mode: object) -> None:
         self.cfg.mode = str(mode)
         self._save()
@@ -427,13 +463,13 @@ class SettingsWindow:
     def _set_model(self, name: object) -> None:
         self.cfg.model = str(name)
         self._save()
-        self.status_label.configure(text="Loading model...")
+        self.status_label.configure(text=_("Loading model..."))
 
         def load() -> None:
             self.app.transcriber.unload()
             try:
                 self.app.transcriber.load()
-                message = "Model ready"
+                message = _("Model ready")
             except Exception as exc:
                 log.exception("model load failed")
                 message = f"Model error: {exc}"
@@ -454,7 +490,7 @@ class SettingsWindow:
     def _set_threads(self, value: object) -> None:
         self.cfg.cpu_threads = int(value)  # type: ignore[arg-type]
         self._save()
-        self.status_label.configure(text="Applies after the model reloads")
+        self.status_label.configure(text=_("Applies after the model reloads"))
 
     def _set_autostart(self, value: bool) -> None:
         if value:
@@ -477,16 +513,16 @@ class SettingsWindow:
             if downloaded:
                 size = models.human_size(models.disk_size(info))
                 widgets["state"].configure(
-                    text="in use" if active else size,
+                    text=_("in use") if active else size,
                     fg=ACCENT if active else MUTED,
                 )
-                widgets["action"].configure(text="Use")
+                widgets["action"].configure(text=_("Use"))
                 widgets["action"].command = lambda i=info: self._use(i)
                 widgets["action"].set_enabled(not active)
                 widgets["remove"].set_enabled(not active)
             else:
                 widgets["state"].configure(text=f"{info.size_gb:.1f} GB", fg=MUTED)
-                widgets["action"].configure(text="Download")
+                widgets["action"].configure(text=_("Download"))
                 widgets["action"].command = lambda i=info: self._download(i)
                 widgets["action"].set_enabled(True)
                 widgets["remove"].set_enabled(False)
@@ -499,12 +535,12 @@ class SettingsWindow:
     def _download(self, info: models.ModelInfo) -> None:
         widgets = self.model_rows[info.name]
         widgets["action"].set_enabled(False)
-        widgets["state"].configure(text="Downloading...")
+        widgets["state"].configure(text=_("Downloading..."))
 
         def done(error: Exception | None) -> None:
             def finish() -> None:
                 if error is not None:
-                    widgets["state"].configure(text="Download failed")
+                    widgets["state"].configure(text=_("Download failed"))
                     widgets["action"].set_enabled(True)
                 else:
                     self._refresh_models()
@@ -555,13 +591,13 @@ class SettingsWindow:
         if shown == 0:
             tk.Label(
                 self.history_box,
-                text="Nothing here yet." if not needle else "No results.",
+                text=_("Nothing here yet.") if not needle else _("No results."),
                 bg=BG, fg=MUTED, font=FONT,
             ).pack(pady=20)
 
     def _copy(self, text: str) -> None:
         output.to_clipboard(text)
-        self.status_label.configure(text="Copied")
+        self.status_label.configure(text=_("Copied"))
         self.win.after(1200, lambda: self.status_label.configure(text=""))
 
 

@@ -165,11 +165,15 @@ class UiHost:
 
         self.post(lambda: HotkeyCapture(self.root, self.cfg, on_save, on_close))
 
-    def open_settings(self, app, capture: Callable[[], None]) -> None:  # noqa: ANN001
+    def open_settings(
+        self, app, capture: Callable[[], None], on_language_change: Callable[[], None] | None = None
+    ) -> None:  # noqa: ANN001
         """Opens the settings window on the Tk thread."""
         from .settings_window import SettingsWindow
 
-        self.post(lambda: SettingsWindow.open(self.root, self.cfg, app, capture))
+        self.post(
+            lambda: SettingsWindow.open(self.root, self.cfg, app, capture, on_language_change)
+        )
 
     def refresh_settings_hotkey(self) -> None:
         """Updates the hotkey shown in the settings window, if it is open."""

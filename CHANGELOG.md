@@ -15,6 +15,14 @@ What changed, newest first. Dates are the day the work landed on `main`.
   and right modifiers apart and leaves the key working as itself; combinations are
   registered as suppressed hotkeys so the keystroke never reaches the window underneath.
 
+**Language**
+
+- The interface speaks Russian as well as English, and picks one from Windows: Russian if
+  Windows itself is Russian, English otherwise. *General → Interface language* overrides
+  it, and the windows rebuild in place rather than asking for a restart.
+- Recognition language stays a separate setting. A Russian interface is no reason to stop
+  dictating in English.
+
 **First run**
 
 - A one-time picker asks which speech model to use, showing what each is good for, how

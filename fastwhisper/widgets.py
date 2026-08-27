@@ -134,12 +134,16 @@ class Dropdown(tk.Frame):
         options: Sequence[tuple[str, object]],
         value: object,
         on_change: Callable[[object], None],
-        width: int = 18,
+        width: int | None = None,
     ) -> None:
         super().__init__(parent, bg=CARD)
         self.options = list(options)
         self.on_change = on_change
         labels = [label for label, _ in self.options]
+        if width is None:
+            # Sized to the longest label: a fixed width in characters clips translations,
+            # and Russian labels run about a third longer than the English ones.
+            width = min(34, max(14, max(len(label) for label in labels) + 1))
         current = next((label for label, code in self.options if code == value), labels[0])
 
         self.var = tk.StringVar(value=current)

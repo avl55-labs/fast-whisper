@@ -14,6 +14,7 @@ from pystray import Menu, MenuItem
 
 from . import output
 from .config import CONFIG_PATH, Config
+from .i18n import _
 from .icons import make_icon
 
 log = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class Tray:
         self.app = app
         self.cfg = cfg
         self.ui = ui
-        self.detail = "Starting..."
+        self.detail = _("Starting...")
         self.icon = pystray.Icon(
             "FastWhisper",
             make_icon("loading"),
@@ -57,21 +58,31 @@ class Tray:
 
     def _menu(self) -> Menu:
         return Menu(
-            MenuItem(lambda _: self._title(), None, enabled=False),
+            MenuItem(lambda item: self._title(), None, enabled=False),
             Menu.SEPARATOR,
-            MenuItem("Settings...", self._open_settings, default=True),
-            MenuItem("Copy last result", self._copy_last),
+            MenuItem(_("Settings..."), self._open_settings, default=True),
+            MenuItem(_("Copy last result"), self._copy_last),
             Menu.SEPARATOR,
-            MenuItem("Quit", self._quit),
+            MenuItem(_("Quit"), self._quit),
         )
 
     # ---------- actions ----------
+
+    def refresh_menu(self) -> None:
+        """Rebuilds the menu, which holds translated labels."""
+        try:
+            self.detail = self.app.ready_hint()
+            self.icon.menu = self._menu()
+            self.icon.update_menu()
+            self.icon.title = self._title()
+        except Exception:
+            log.debug("could not rebuild the tray menu", exc_info=True)
 
     def _open_settings(self) -> None:
         if self.ui is None:
             _open(CONFIG_PATH)
             return
-        self.ui.open_settings(self.app, self._capture_hotkey)
+        self.ui.open_settings(self.app, self._capture_hotkey, self.refresh_menu)
 
     def _capture_hotkey(self) -> None:
         """Opens the capture window, with the current hotkey disarmed meanwhile."""

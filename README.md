@@ -152,6 +152,11 @@ click on the icon. Six pages:
 - **History** - everything recognized so far, searchable. Click an entry to copy it.
 - **About** - version and the paths to the log and data folders.
 
+The interface speaks English and Russian. It follows Windows by default - a Russian
+Windows gets a Russian interface, anything else gets English - and *General → Interface
+language* overrides that. It is separate from the language you dictate in: a Russian
+interface is no reason to stop dictating in English.
+
 Anything set here is written to `%APPDATA%\FastWhisper\config.json` immediately.
 
 ## Choosing a hotkey
@@ -186,7 +191,8 @@ options exist only there:
 | `model` | `large-v3-turbo` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
 | `device` | `cpu` | `cuda` if you have an NVIDIA card and the CUDA libraries installed. |
 | `compute_type` | `int8` | `int8` on CPU, `float16` on CUDA. |
-| `language` | `ru` | Two-letter code, or `auto` to detect per recording. |
+| `language` | `ru` | Recognition language: two-letter code, or `auto` to detect per recording. |
+| `ui_language` | `auto` | Interface language: `auto` follows Windows, or `ru` / `en`. |
 | `output` | `paste` | `paste`, `type` (key by key), or `clipboard` (no insertion). |
 | `keep_clipboard` | `true` | Leave the dictated text on the clipboard after pasting. |
 | `beep` | `true` | Short beeps on start and stop. |

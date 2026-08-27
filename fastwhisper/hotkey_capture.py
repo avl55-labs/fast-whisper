@@ -14,6 +14,7 @@ import keyboard
 
 from .config import Config
 from .hotkey import HotkeyError, scan_codes_for
+from .i18n import _
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ class HotkeyCapture:
         self._hook = None
 
         self.win = tk.Toplevel(root)
-        self.win.title("FastWhisper - set hotkey")
+        self.win.title(_("FastWhisper - set hotkey"))
         self.win.configure(bg=BACKGROUND)
         self.win.resizable(False, False)
         self.win.attributes("-topmost", True)
@@ -93,7 +94,7 @@ class HotkeyCapture:
 
         tk.Label(
             self.win,
-            text="Press the key or combination you want to use",
+            text=_("Press the key or combination you want to use"),
             bg=BACKGROUND, fg=FOREGROUND, font=("Segoe UI", 11),
         ).pack(padx=28, pady=(22, 6))
 
@@ -106,7 +107,7 @@ class HotkeyCapture:
 
         self.hint = tk.Label(
             self.win,
-            text=(
+            text=_(
                 "A single key such as Right Ctrl is the easiest to hold.\n"
                 "A combination is swallowed while FastWhisper runs, a single key is not.\n"
                 "Escape closes this window without changing anything."
@@ -118,12 +119,12 @@ class HotkeyCapture:
         buttons = tk.Frame(self.win, bg=BACKGROUND)
         buttons.pack(pady=(0, 20))
         self.save_button = tk.Button(
-            buttons, text="Save", width=12, command=self.save, state="disabled",
+            buttons, text=_("Save"), width=12, command=self.save, state="disabled",
             relief="flat", bg=ACCENT, fg="white", activebackground="#4a76cc",
         )
         self.save_button.pack(side="left", padx=6)
         tk.Button(
-            buttons, text="Cancel", width=12, command=self.close,
+            buttons, text=_("Cancel"), width=12, command=self.close,
             relief="flat", bg="#2a2c33", fg=FOREGROUND, activebackground="#35373f",
         ).pack(side="left", padx=6)
 
@@ -175,7 +176,9 @@ class HotkeyCapture:
         try:
             keyboard.parse_hotkey(combo)
         except Exception as exc:
-            self.hint.configure(text=f"{combo} cannot be used: {exc}")
+            self.hint.configure(
+                text=_("{combo} cannot be used: {error}").format(combo=combo, error=exc)
+            )
             return
         self._saving = True
         self.close()
