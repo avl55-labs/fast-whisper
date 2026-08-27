@@ -31,7 +31,7 @@ class Config:
     # Whisper always runs its encoder over a fixed 30-second window, so latency barely
     # depends on how long you spoke: on a modern 8-core CPU expect roughly 0.6s for base,
     # 1.6s for small, 4.3s for medium and 5.5s for large-v3-turbo, per phrase.
-    model: str = "small"
+    model: str = "large-v3-turbo"
     # "cpu" or "cuda". CUDA needs an NVIDIA card.
     device: str = "cpu"
     # int8 is the fastest on CPU; float16 only makes sense on CUDA.

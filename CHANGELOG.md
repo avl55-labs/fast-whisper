@@ -17,6 +17,10 @@ What changed, newest first. Dates are the day the work landed on `main`.
 
 **The floating panel**
 
+- Gold for recording, its opposite blue for transcribing, in the panel and in the tray
+  icon. Resting grains keep a bronze tint instead of fading to grey, and speaking louder
+  adds rows to the lattice rather than only brightening the ones already there.
+
 - A lattice of gold grains at the top of the screen, rippling with your voice while
   recording and carrying a travelling wave while the model works.
 - No panel behind it. The window is layered and its bitmap is pushed with
@@ -36,6 +40,9 @@ What changed, newest first. Dates are the day the work landed on `main`.
 
 **Models**
 
+- Whisper Large v3 Turbo is the default. Small is what comparable apps ship, and it is
+  what English needs; Russian gets noticeably more wrong out of it, and Turbo costs the
+  same disk as Medium for better accuracy.
 - Listed under their real names with who trained them, who converted them to the runtime
   this app uses, an accuracy gauge and the measured wait per phrase.
 - Download and delete from the page. The active model cannot be deleted.

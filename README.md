@@ -108,7 +108,8 @@ by everyone else. Each user still keeps their own settings and history under `%A
 so hotkeys and vocabulary do not leak between accounts. Uninstall with
 `msiexec /x FastWhisper-0.1.0.msi /qn`.
 
-On the first launch the app downloads the Whisper model (~0.5 GB for the default `small`)
+On the first launch the app downloads the Whisper model (~1.6 GB for the default
+`large-v3-turbo`)
 into `%USERPROFILE%\.cache\huggingface`. The tray icon stays blue while that happens.
 Everything after that is offline.
 
@@ -178,7 +179,7 @@ options exist only there:
 | --- | --- | --- |
 | `hotkey` | `ctrl+space` | Any combination in [`keyboard`][kb] syntax, e.g. `f9`, `right ctrl`. |
 | `mode` | `toggle` | `hold` (push-to-talk) or `toggle`. |
-| `model` | `small` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
+| `model` | `large-v3-turbo` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
 | `device` | `cpu` | `cuda` if you have an NVIDIA card and the CUDA libraries installed. |
 | `compute_type` | `int8` | `int8` on CPU, `float16` on CUDA. |
 | `language` | `ru` | Two-letter code, or `auto` to detect per recording. |
@@ -202,9 +203,9 @@ a nine-second one. Measured on an 8-core Ryzen 9 8945HS, `int8`, 16 threads:
 | Model | Size on disk | Latency per phrase | Quality |
 | --- | --- | --- | --- |
 | `base` | ~0.15 GB | ~0.6 s | rough, fine for short English notes |
-| `small` | ~0.5 GB | ~1.6 s | decent — the default |
+| `small` | ~0.5 GB | ~1.6 s | decent, and the fastest that is usable |
 | `medium` | ~1.5 GB | ~4.3 s | good, but `large-v3-turbo` beats it at a similar cost |
-| `large-v3-turbo` | ~1.6 GB | ~5.5 s | best quality on CPU |
+| `large-v3-turbo` | ~1.6 GB | ~5.5 s | best quality on CPU — the default |
 | `large-v3` | ~3 GB | slower still | only worth it on a CUDA GPU |
 
 Switch models from the tray menu; the new one loads in the background. On an NVIDIA GPU

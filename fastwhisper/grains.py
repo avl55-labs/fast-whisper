@@ -21,10 +21,10 @@ SUPERSAMPLE = 3
 # about 40 degrees on the colour wheel and the cool ramp sits opposite it, near 220, which
 # is as far apart as two hues get while both stay legible over a bright or a dark desktop.
 WARM = (
-    (34, 32, 28),      # resting
-    (104, 78, 34),     # ember
-    (226, 178, 84),    # gold
-    (255, 233, 176),   # lit
+    (86, 66, 34),      # resting: dim bronze, never grey
+    (168, 124, 46),    # ember
+    (232, 184, 88),    # gold
+    (255, 240, 198),   # lit
 )
 COOL = (
     (26, 31, 38),
@@ -36,6 +36,7 @@ PALETTES = {"recording": WARM, "processing": COOL}
 
 COLUMNS = 30
 ROWS = 3
+EXTRA_ROWS = 2  # added on top of ROWS at full volume, so loud speech visibly blooms
 
 
 def _mix(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
@@ -62,7 +63,7 @@ def _shade(t: float, palette: tuple = WARM) -> tuple[int, int, int, int]:
         colour = _mix(mid, full, (t - 0.45) / 0.35)
     else:
         colour = _mix(full, lit, (t - 0.8) / 0.2)
-    alpha = int(70 + 185 * (t ** 0.7))
+    alpha = int(110 + 145 * (t ** 0.55))
     return (*colour, min(255, alpha))
 
 
@@ -93,11 +94,16 @@ class GrainField:
         step_x = span_x / (COLUMNS - 1)
         centre_y = HEIGHT / 2
 
-        for row in range(ROWS):
+        # While recording the lattice grows with your voice: the loudest column decides
+        # how many rows are on screen at all.
+        loudest = max(levels[:COLUMNS], default=0.0) if state == "recording" else 0.0
+        rows = ROWS + int(round(EXTRA_ROWS * loudest))
+
+        for row in range(rows):
             # Rows sit above and below the centre line and lag behind each other.
-            row_offset = (row - (ROWS - 1) / 2) * 13
+            row_offset = (row - (rows - 1) / 2) * 13
             row_phase = row * 0.9
-            row_fade = 1.0 - abs(row - (ROWS - 1) / 2) / ROWS
+            row_fade = 1.0 - abs(row - (rows - 1) / 2) / (rows + 0.5)
 
             for column in range(COLUMNS):
                 x = margin_x + column * step_x
@@ -109,8 +115,8 @@ class GrainField:
                     level = levels[column] if column < len(levels) else 0.0
                     wave = math.sin(phase * 2.2 + column * 0.42 + row_phase)
                     lift = wave * (2.5 + level * 15.0)
-                    heat = 0.18 + level * 0.9 + 0.08 * wave
-                    size = 1.7 + level * 2.6
+                    heat = 0.3 + level * 0.85 + 0.08 * wave
+                    size = 1.9 + level * 3.0
                     angle = phase * 0.5 + column * 0.2
                 else:
                     # A crest travels along the lattice, so the panel keeps moving while
