@@ -202,6 +202,9 @@ class SettingsWindow:
         self.hotkey_value.pack(side="left", padx=(0, 10))
         Button(slot, "Change...", self._change_hotkey).pack(side="left")
 
+        _row, slot = card.row("Cancel a recording", "Discards it without recognizing anything")
+        tk.Label(slot, text="ESC", bg=CARD, fg=MUTED, font=FONT).pack()
+
         _row, slot = card.row("Mode", "Hold the key while speaking, or press once to start")
         Dropdown(slot, MODES, self.cfg.mode, self._set_mode).pack()
 

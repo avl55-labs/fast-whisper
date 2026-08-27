@@ -40,7 +40,8 @@ def main() -> int:
     log = logging.getLogger("fastwhisper")
 
     if not acquire():
-        message_box("FastWhisper is already running - look for the microphone icon in the tray.")
+        # A modal dialog from a tray app is worse than the duplicate launch it reports.
+        log.info("another instance is already running, exiting")
         return 0
 
     cfg = Config.load()

@@ -40,9 +40,11 @@ class ModelInfo:
 # marks: the models are used under their own licences, and nothing here is endorsed by
 # or affiliated with the people who trained them.
 BADGES = {
-    "OpenAI": ("#10a37f", "AI"),
-    "Hugging Face": ("#ff9d00", "HF"),
+    "OpenAI": ("#0f9d7d", "AI"),
+    "Hugging Face": ("#ffab00", "HF"),
     "Systran": ("#2f6fe0", "SY"),
+    "Mobius Labs": ("#7b5cf0", "ML"),
+    "Distil-Whisper": ("#e0533d", "DW"),
 }
 
 
@@ -60,6 +62,10 @@ CATALOGUE: list[ModelInfo] = [
               "99 languages"),
     ModelInfo("large-v3", "Whisper Large v3", "OpenAI", "Systran",
               "Systran/faster-whisper-large-v3", 3.00, "~15 s", 1, 5, "99 languages"),
+    ModelInfo("large-v2", "Whisper Large v2", "OpenAI", "Systran",
+              "Systran/faster-whisper-large-v2", 3.00, "~15 s", 1, 5, "99 languages"),
+    ModelInfo("distil-large-v3.5", "Distil-Whisper Large v3.5", "Hugging Face", "Distil-Whisper",
+              "distil-whisper/distil-large-v3.5-ct2", 1.50, "~3.5 s", 3, 4, "English"),
     ModelInfo("distil-large-v3", "Distil-Whisper Large v3", "Hugging Face", "Systran",
               "Systran/faster-distil-whisper-large-v3", 1.50, "~4 s", 3, 4, "English"),
     ModelInfo("small.en", "Whisper Small English", "OpenAI", "Systran",
