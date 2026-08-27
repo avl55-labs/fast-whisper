@@ -192,10 +192,6 @@ Windows gets a Russian interface, anything else gets English - and *General → 
 language* overrides that. It is separate from the language you dictate in: a Russian
 interface is no reason to stop dictating in English.
 
-<p align="center">
-  <img src="assets/screenshot-general-ru.png" alt="The same page in Russian" width="700">
-</p>
-
 Anything set here is written to `%APPDATA%\FastWhisper\config.json` immediately.
 
 ## Choosing a hotkey
