@@ -40,6 +40,10 @@ class Config:
     language: str = "ru"
     # What to do with the text: "paste" into the focused window, "type" it, or "clipboard" only.
     output: str = "paste"
+    # Leave the dictated text on the clipboard, so a missed paste is not a lost sentence.
+    keep_clipboard: bool = True
+    # False until the model picker has been answered once.
+    setup_done: bool = False
     # Short beeps when recording starts and stops.
     beep: bool = True
     # Tray balloon notifications with the recognized text.

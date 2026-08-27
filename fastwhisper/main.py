@@ -88,7 +88,21 @@ def main() -> int:
         ui.on_state(state, detail)
 
     app.on_state = on_state
-    app.start()
+
+    if cfg.setup_done:
+        app.start()
+    else:
+        # First run: pick a model before spending a download on the default one.
+        app.start(preload=False)
+
+        def chosen(name: str) -> None:
+            cfg.model = name
+            cfg.setup_done = True
+            cfg.save()
+            log.info("model chosen at first run: %s", name)
+            app.preload()
+
+        ui.open_setup(chosen)
 
     tray_thread = threading.Thread(target=tray.run, name="tray", daemon=True)
     tray_thread.start()

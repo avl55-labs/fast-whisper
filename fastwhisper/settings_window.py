@@ -222,6 +222,12 @@ class SettingsWindow:
         Dropdown(slot, OUTPUTS, self.cfg.output, self._setter("output")).pack()
 
         _row, slot = card.row(
+            "Leave it on the clipboard",
+            "So a paste that missed the window can still be pasted by hand",
+        )
+        Switch(slot, self.cfg.keep_clipboard, self._setter("keep_clipboard")).pack()
+
+        _row, slot = card.row(
             "Keep a history", f"Every result is appended to {history.HISTORY_PATH.name}"
         )
         Switch(slot, self.cfg.save_history, self._setter("save_history")).pack()

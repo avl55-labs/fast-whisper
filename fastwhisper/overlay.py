@@ -18,6 +18,7 @@ from typing import Callable
 
 from .config import Config
 from .grains import COLUMNS, HEIGHT, WIDTH, GrainField
+from .icons import window_icon
 from .layered import LayeredSurface, make_click_through, window_handle
 
 log = logging.getLogger(__name__)
@@ -127,6 +128,15 @@ class UiHost:
         self.root = tk.Tk()
         self.root.withdraw()
         self.root.title("FastWhisper")
+        # Every Toplevel inherits this, so the settings and capture windows get the mark
+        # instead of Tk's default feather.
+        try:
+            from PIL import ImageTk
+
+            self._icon = ImageTk.PhotoImage(window_icon(64))
+            self.root.iconphoto(True, self._icon)
+        except Exception:
+            log.debug("could not set the window icon", exc_info=True)
         self._queue: queue.Queue[Callable[[], None]] = queue.Queue()
         self.overlay = Overlay(self.root, cfg, level_of)
         self._running = True
@@ -171,6 +181,12 @@ class UiHost:
                 window.refresh_hotkey()
 
         self.post(apply)
+
+    def open_setup(self, on_choose: Callable[[str], None]) -> None:
+        """Opens the first-run model picker on the Tk thread."""
+        from .setup_window import SetupWindow
+
+        self.post(lambda: SetupWindow(self.root, self.cfg, on_choose))
 
     def _pump(self) -> None:
         while True:

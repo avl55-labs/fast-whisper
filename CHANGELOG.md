@@ -15,10 +15,23 @@ What changed, newest first. Dates are the day the work landed on `main`.
   and right modifiers apart and leaves the key working as itself; combinations are
   registered as suppressed hotkeys so the keystroke never reaches the window underneath.
 
+**First run**
+
+- A one-time picker asks which speech model to use, showing what each is good for, how
+  accurate it is and how long it makes you wait. Choosing a model is the one decision a
+  new user cannot avoid - it costs a download of between 80 MB and 1.6 GB - so it is put
+  in front of them once instead of being made silently.
+
+**Text**
+
+- The dictated text stays on the clipboard after being pasted. A paste can miss, and then
+  the only copy of what was just said would be gone.
+
 **The floating panel**
 
 - Gold for recording, its opposite blue for transcribing, in the panel and in the tray
-  icon. Resting grains keep a bronze tint instead of fading to grey, and speaking louder
+  icon. The tray icon and the window icon are the logo's grain now, and the two states
+  differ in shape as well as in colour - a colour-blind reader gets the same signal. Resting grains keep a bronze tint instead of fading to grey, and speaking louder
   adds rows to the lattice rather than only brightening the ones already there.
 
 - A lattice of gold grains at the top of the screen, rippling with your voice while

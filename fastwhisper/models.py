@@ -28,6 +28,9 @@ class ModelInfo:
     speed: int         # 1..5, for the gauge
     accuracy: int      # 1..5, for the gauge
     languages: str
+    # Shown in the first-run picker. Empty for the models it does not offer.
+    tier: str = ""     # the one-word verdict
+    purpose: str = ""  # what this model is the right choice for
 
     @property
     def credit(self) -> str:
@@ -50,16 +53,27 @@ BADGES = {
 
 CATALOGUE: list[ModelInfo] = [
     ModelInfo("tiny", "Whisper Tiny", "OpenAI", "Systran",
-              "Systran/faster-whisper-tiny", 0.08, "~0.3 s", 5, 1, "99 languages"),
+              "Systran/faster-whisper-tiny", 0.08, "~0.3 s", 5, 1, "99 languages",
+              tier="Instant",
+              purpose="As fast as it gets. Expect to fix words afterwards."),
     ModelInfo("base", "Whisper Base", "OpenAI", "Systran",
-              "Systran/faster-whisper-base", 0.15, "~0.6 s", 5, 2, "99 languages"),
+              "Systran/faster-whisper-base", 0.15, "~0.6 s", 5, 2, "99 languages",
+              tier="Quick",
+              purpose="Short notes and search boxes, where a wrong word costs nothing."),
     ModelInfo("small", "Whisper Small", "OpenAI", "Systran",
-              "Systran/faster-whisper-small", 0.50, "~1.6 s", 4, 3, "99 languages"),
+              "Systran/faster-whisper-small", 0.50, "~1.6 s", 4, 3, "99 languages",
+              tier="Balanced",
+              purpose="Answers in a second and a half. Fine for English, rougher on Russian."),
     ModelInfo("medium", "Whisper Medium", "OpenAI", "Systran",
-              "Systran/faster-whisper-medium", 1.50, "~4.3 s", 3, 4, "99 languages"),
+              "Systran/faster-whisper-medium", 1.50, "~4.3 s", 3, 4, "99 languages",
+              tier="Accurate",
+              purpose="Everyday dictation when you would rather not reread every line."),
     ModelInfo("large-v3-turbo", "Whisper Large v3 Turbo", "OpenAI", "Mobius Labs",
               "mobiuslabsgmbh/faster-whisper-large-v3-turbo", 1.60, "~5.5 s", 2, 5,
-              "99 languages"),
+              "99 languages",
+              tier="Recommended",
+              purpose="The most accurate one that is still comfortable to wait for. "
+                      "Handles Russian names and endings the smaller ones mangle."),
     ModelInfo("large-v3", "Whisper Large v3", "OpenAI", "Systran",
               "Systran/faster-whisper-large-v3", 3.00, "~15 s", 1, 5, "99 languages"),
     ModelInfo("large-v2", "Whisper Large v2", "OpenAI", "Systran",
@@ -73,6 +87,11 @@ CATALOGUE: list[ModelInfo] = [
 ]
 
 BY_NAME = {model.name: model for model in CATALOGUE}
+
+# What the first-run picker offers, best first. The rest of the catalogue stays one click
+# away in the settings window.
+FEATURED = [BY_NAME[name] for name in
+            ("large-v3-turbo", "medium", "small", "base", "tiny")]
 
 
 def cache_root() -> Path:

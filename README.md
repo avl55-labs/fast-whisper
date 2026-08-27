@@ -34,9 +34,13 @@
 
 1. Download the installer from [Releases][rel] and run it. No administrator rights, no UAC
    prompt.
-2. Wait for the tray icon to stop being blue - that is the speech model downloading, once.
+2. On the first launch it asks which speech model to use, with what each one costs in
+   waiting and in disk. The recommended one is picked for you.
 3. Put your cursor where you want the text, press `Ctrl+Space`, say something, press it
    again. `Esc` throws a recording away.
+
+The text is also left on the clipboard, so a paste that lands in the wrong window - or in
+no window - is not a lost sentence.
 
 ## Why
 
@@ -184,6 +188,7 @@ options exist only there:
 | `compute_type` | `int8` | `int8` on CPU, `float16` on CUDA. |
 | `language` | `ru` | Two-letter code, or `auto` to detect per recording. |
 | `output` | `paste` | `paste`, `type` (key by key), or `clipboard` (no insertion). |
+| `keep_clipboard` | `true` | Leave the dictated text on the clipboard after pasting. |
 | `beep` | `true` | Short beeps on start and stop. |
 | `vad` | `true` | Trim silence around speech before transcribing. |
 | `auto_gain` | `true` | Lift a quiet recording before recognition. |

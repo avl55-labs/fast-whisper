@@ -31,10 +31,17 @@ class FastWhisperApp:
 
     # ---------- lifecycle ----------
 
-    def start(self) -> None:
+    def start(self, preload: bool = True) -> None:
+        """`preload=False` leaves the model alone, for when the user is still choosing."""
+        self._register_hotkey()
+        if preload:
+            self.preload()
+        else:
+            self._set_state("idle", "Choose a model to begin")
+
+    def preload(self) -> None:
         self._set_state("loading", "Loading the model...")
         threading.Thread(target=self._preload, daemon=True).start()
-        self._register_hotkey()
 
     def _preload(self) -> None:
         try:
@@ -147,7 +154,7 @@ class FastWhisperApp:
         if text:
             self.last_text = text
             try:
-                deliver(text, self.cfg.output)
+                deliver(text, self.cfg.output, keep_clipboard=self.cfg.keep_clipboard)
             except Exception as exc:
                 log.exception("could not deliver the text")
                 self._set_state("error", f"Output failed: {exc}")

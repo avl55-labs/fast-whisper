@@ -30,8 +30,13 @@ def _get_clipboard() -> str:
         return ""
 
 
-def paste(text: str, restore_clipboard: bool = True) -> None:
-    """Puts the text on the clipboard and sends Ctrl+V to the focused window."""
+def paste(text: str, restore_clipboard: bool = False) -> None:
+    """Puts the text on the clipboard and sends Ctrl+V to the focused window.
+
+    The text is left on the clipboard afterwards by default. A paste can miss - the window
+    lost focus, the application ignores synthetic Ctrl+V - and then the only copy of what
+    you just said would be gone.
+    """
     with _clipboard_lock:
         previous = _get_clipboard() if restore_clipboard else None
         _set_clipboard(text)
@@ -57,12 +62,14 @@ def to_clipboard(text: str) -> None:
         _set_clipboard(text)
 
 
-def deliver(text: str, mode: str) -> None:
+def deliver(text: str, mode: str, keep_clipboard: bool = True) -> None:
     if not text:
         return
     if mode == "type":
         type_text(text)
+        if keep_clipboard:
+            to_clipboard(text)
     elif mode == "clipboard":
         to_clipboard(text)
     else:
-        paste(text)
+        paste(text, restore_clipboard=not keep_clipboard)
