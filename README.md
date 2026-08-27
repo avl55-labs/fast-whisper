@@ -1,14 +1,40 @@
-# FastWhisper
+<p align="center">
+  <img src="assets/banner.png" alt="FastWhisper" width="820">
+</p>
 
-Hold a hotkey, speak, and the text appears in whatever window you were typing in.
-Offline, free, no account, no ads, no telemetry. Windows 10/11.
+<p align="center">
+  <b>Offline dictation for Windows.</b><br>
+  Press a key, speak, and the text appears in whatever window you were typing in.
+</p>
 
-It is a small, self-contained alternative to SuperWhisper and similar paid dictation
-apps. Speech recognition runs locally through [faster-whisper][fw] (OpenAI's Whisper
-models on the CTranslate2 runtime), so nothing leaves your machine.
+<p align="center">
+  <a href="https://github.com/avl55-labs/fast-whisper/releases/latest">Download</a> ·
+  <a href="#settings">Settings</a> ·
+  <a href="#choosing-a-model">Models</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
-> Not affiliated with the `faster-whisper` library. FastWhisper is an application that
-> uses it.
+---
+
+## Why
+
+Dictation is the fastest way to get a paragraph out of your head, and on Windows the good
+tools for it are subscriptions: SuperWhisper, Wispr Flow and the rest bill monthly, want an
+account, and send your voice to their servers.
+
+FastWhisper does the same job with none of that. Speech recognition runs on your own
+machine through [faster-whisper][fw] - OpenAI's Whisper models on the CTranslate2 runtime -
+so your voice never leaves the computer, there is nothing to log in to, nothing to pay, and
+it keeps working with the network off. It is a tray application: no window in your way, one
+hotkey, and the text lands where your cursor already is.
+
+> Not affiliated with the `faster-whisper` library, with OpenAI, or with anyone else whose
+> models it can run. FastWhisper is an application that uses open models under their own
+> licences.
+
+<p align="center">
+  <img src="assets/screenshot-overlay.png" alt="The panel that appears while you dictate" width="520">
+</p>
 
 ## How it works
 
@@ -41,6 +67,13 @@ screen would tell you the app was still working.
 
 The panel never takes focus and clicks pass straight through it, so it cannot interfere
 with the window you are dictating into. Turn it off or move it in *Settings -> General*.
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshot-general.png" alt="Settings" width="760"><br>
+  <img src="assets/screenshot-models.png" alt="Models" width="760">
+</p>
 
 ## Settings
 
