@@ -7,7 +7,7 @@ import time
 from typing import Callable
 
 from . import history, sounds
-from .audio import Recorder, RecordingError, duration
+from .audio import SILENCE_PEAK, Recorder, RecordingError, duration, normalize, peak
 from .config import Config
 from .hotkey import HotkeyError, HotkeyListener
 from .output import deliver
@@ -117,6 +117,17 @@ class FastWhisperApp:
             self._release()
             self._set_state("idle", self.ready_hint())
             return
+
+        level = peak(audio)
+        if level <= SILENCE_PEAK:
+            # Silence this complete means the device is muted or blocked, not a quiet room.
+            log.warning("captured %.1fs at peak %.5f - the microphone gave nothing", seconds, level)
+            self._release()
+            sounds.error()
+            self._set_state("error", "Microphone is silent - check the input device")
+            return
+        if self.cfg.auto_gain:
+            audio = normalize(audio)
         self._set_state("working", f"Transcribing {seconds:.1f}s...")
         threading.Thread(target=self._transcribe, args=(audio, seconds), daemon=True).start()
 

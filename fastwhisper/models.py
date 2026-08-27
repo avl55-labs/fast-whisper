@@ -19,31 +19,51 @@ log = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class ModelInfo:
     name: str          # what goes into the config and into WhisperModel()
-    title: str
+    title: str         # the model's own name, as its authors call it
+    author: str        # who trained the weights
+    packager: str      # who converted them to the CTranslate2 format we run
     repo: str          # Hugging Face repository backing it
     size_gb: float     # download size, approximate
     latency: str       # measured wall time per phrase on CPU
-    quality: str
+    speed: int         # 1..5, for the gauge
+    accuracy: int      # 1..5, for the gauge
     languages: str
+
+    @property
+    def credit(self) -> str:
+        if self.packager and self.packager != self.author:
+            return f"{self.author}, converted by {self.packager}"
+        return self.author
+
+
+# Colour and monogram per author. These are plain badges rather than the companies'
+# marks: the models are used under their own licences, and nothing here is endorsed by
+# or affiliated with the people who trained them.
+BADGES = {
+    "OpenAI": ("#10a37f", "AI"),
+    "Hugging Face": ("#ff9d00", "HF"),
+    "Systran": ("#2f6fe0", "SY"),
+}
 
 
 CATALOGUE: list[ModelInfo] = [
-    ModelInfo("tiny", "Tiny", "Systran/faster-whisper-tiny",
-              0.08, "~0.3 s", "rough", "multilingual"),
-    ModelInfo("base", "Base", "Systran/faster-whisper-base",
-              0.15, "~0.6 s", "rough", "multilingual"),
-    ModelInfo("small", "Small", "Systran/faster-whisper-small",
-              0.50, "~1.6 s", "decent", "multilingual"),
-    ModelInfo("medium", "Medium", "Systran/faster-whisper-medium",
-              1.50, "~4.3 s", "good", "multilingual"),
-    ModelInfo("large-v3-turbo", "Large v3 Turbo", "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
-              1.60, "~5.5 s", "best on CPU", "multilingual"),
-    ModelInfo("large-v3", "Large v3", "Systran/faster-whisper-large-v3",
-              3.00, "~15 s", "best", "multilingual"),
-    ModelInfo("distil-large-v3", "Distil Large v3", "Systran/faster-distil-whisper-large-v3",
-              1.50, "~4 s", "good", "English only"),
-    ModelInfo("small.en", "Small (English)", "Systran/faster-whisper-small.en",
-              0.50, "~1.6 s", "decent", "English only"),
+    ModelInfo("tiny", "Whisper Tiny", "OpenAI", "Systran",
+              "Systran/faster-whisper-tiny", 0.08, "~0.3 s", 5, 1, "99 languages"),
+    ModelInfo("base", "Whisper Base", "OpenAI", "Systran",
+              "Systran/faster-whisper-base", 0.15, "~0.6 s", 5, 2, "99 languages"),
+    ModelInfo("small", "Whisper Small", "OpenAI", "Systran",
+              "Systran/faster-whisper-small", 0.50, "~1.6 s", 4, 3, "99 languages"),
+    ModelInfo("medium", "Whisper Medium", "OpenAI", "Systran",
+              "Systran/faster-whisper-medium", 1.50, "~4.3 s", 3, 4, "99 languages"),
+    ModelInfo("large-v3-turbo", "Whisper Large v3 Turbo", "OpenAI", "Mobius Labs",
+              "mobiuslabsgmbh/faster-whisper-large-v3-turbo", 1.60, "~5.5 s", 2, 5,
+              "99 languages"),
+    ModelInfo("large-v3", "Whisper Large v3", "OpenAI", "Systran",
+              "Systran/faster-whisper-large-v3", 3.00, "~15 s", 1, 5, "99 languages"),
+    ModelInfo("distil-large-v3", "Distil-Whisper Large v3", "Hugging Face", "Systran",
+              "Systran/faster-distil-whisper-large-v3", 1.50, "~4 s", 3, 4, "English"),
+    ModelInfo("small.en", "Whisper Small English", "OpenAI", "Systran",
+              "Systran/faster-whisper-small.en", 0.50, "~1.6 s", 4, 3, "English"),
 ]
 
 BY_NAME = {model.name: model for model in CATALOGUE}
@@ -119,6 +139,26 @@ def human_size(num_bytes: int) -> str:
     if num_bytes >= 1 << 30:
         return f"{num_bytes / (1 << 30):.1f} GB"
     return f"{num_bytes / (1 << 20):.0f} MB"
+
+
+def badge(model: ModelInfo, size: int = 26):  # noqa: ANN201 - returns a PIL image
+    """Small monogram tile standing in for the author, drawn rather than shipped."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    colour, letters = BADGES.get(model.author, ("#6d7079", model.author[:2].upper()))
+    image = Image.new("RGBA", (size * 4, size * 4), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1), radius=size, fill=colour)
+    try:
+        font = ImageFont.truetype("segoeuib.ttf", int(size * 1.9))
+    except OSError:
+        font = ImageFont.load_default()
+    box = draw.textbbox((0, 0), letters, font=font)
+    draw.text(
+        ((size * 4 - box[2] + box[0]) / 2, (size * 4 - box[3] + box[1]) / 2 - box[1]),
+        letters, font=font, fill="white",
+    )
+    return image.resize((size, size), Image.LANCZOS)
 
 
 def download(model: ModelInfo, on_done=None) -> None:  # noqa: ANN001

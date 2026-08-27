@@ -12,16 +12,10 @@ from __future__ import annotations
 
 import math
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
-WIDTH, HEIGHT = 340, 76
-RADIUS = 26
+WIDTH, HEIGHT = 420, 88
 SUPERSAMPLE = 3
-
-# Any colour absent from the artwork; these pixels are keyed out by the window.
-CHROMA = (255, 0, 254)
-PANEL = (14, 15, 18)
-PANEL_EDGE = (44, 40, 33)
 
 # The shimmer runs along this ramp, from cold ash to lit gold.
 DARK = (34, 32, 28)
@@ -42,17 +36,26 @@ def _mix(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[in
     )
 
 
-def _shade(t: float) -> tuple[int, int, int]:
-    """Position on the ash-to-gold ramp, 0..1."""
+def _shade(t: float) -> tuple[int, int, int, int]:
+    """Colour and opacity for a grain, from resting to fully lit.
+
+    Without a panel behind them the quiet grains must not simply go dark - on a light
+    desktop that reads as dirt. They fade out instead, so the field dissolves rather
+    than turning grey.
+    """
+    t = max(0.0, min(1.0, t))
     if t < 0.45:
-        return _mix(DARK, EMBER, t / 0.45)
-    if t < 0.8:
-        return _mix(EMBER, GOLD, (t - 0.45) / 0.35)
-    return _mix(GOLD, BRIGHT, (t - 0.8) / 0.2)
+        colour = _mix(DARK, EMBER, t / 0.45)
+    elif t < 0.8:
+        colour = _mix(EMBER, GOLD, (t - 0.45) / 0.35)
+    else:
+        colour = _mix(GOLD, BRIGHT, (t - 0.8) / 0.2)
+    alpha = int(70 + 185 * (t ** 0.7))
+    return (*colour, min(255, alpha))
 
 
 def _diamond(draw: ImageDraw.ImageDraw, x: float, y: float, size: float, angle: float,
-             colour: tuple[int, int, int]) -> None:
+             colour: tuple[int, int, int, int]) -> None:
     points = []
     for corner in range(4):
         theta = angle + corner * math.pi / 2
@@ -61,22 +64,15 @@ def _diamond(draw: ImageDraw.ImageDraw, x: float, y: float, size: float, angle: 
 
 
 class GrainField:
-    """Renders one frame of the lattice for a given state."""
+    """Renders one frame of the lattice for a given state.
 
-    def __init__(self) -> None:
-        self._mask = self._build_mask()
-
-    @staticmethod
-    def _build_mask() -> Image.Image:
-        mask = Image.new("L", (WIDTH, HEIGHT), 0)
-        ImageDraw.Draw(mask).rounded_rectangle(
-            (0, 0, WIDTH - 1, HEIGHT - 1), radius=RADIUS, fill=255
-        )
-        return mask
+    The result is RGBA with a fully transparent background: the grains float over the
+    desktop with nothing behind them, so the window has to carry real per-pixel alpha.
+    """
 
     def render(self, state: str, phase: float, levels: list[float]) -> Image.Image:
         scale = SUPERSAMPLE
-        canvas = Image.new("RGB", (WIDTH * scale, HEIGHT * scale), PANEL)
+        canvas = Image.new("RGBA", (WIDTH * scale, HEIGHT * scale), (0, 0, 0, 0))
         draw = ImageDraw.Draw(canvas)
 
         margin_x, margin_y = 26, 20
@@ -123,20 +119,19 @@ class GrainField:
                 if not (margin_y * 0.3 < y < HEIGHT - margin_y * 0.3):
                     continue
 
-                colour = _shade(heat * row_fade + 0.05)
-                _diamond(draw, x * scale, y * scale, max(1.0, size) * scale, angle, colour)
+                _diamond(
+                    draw, x * scale, y * scale, max(1.0, size) * scale, angle,
+                    _shade(heat * row_fade + 0.05),
+                )
 
         frame = canvas.resize((WIDTH, HEIGHT), Image.LANCZOS)
-
-        # The rounded edge is drawn without antialiasing on purpose: a blended pixel would
-        # mix panel and chroma and show up as a magenta fringe once the colour is keyed out.
-        out = Image.new("RGB", (WIDTH, HEIGHT), CHROMA)
-        out.paste(frame, (0, 0), self._mask)
-        ImageDraw.Draw(out).rounded_rectangle(
-            (0, 0, WIDTH - 1, HEIGHT - 1), radius=RADIUS, outline=PANEL_EDGE, width=1
-        )
-        return out
+        return _with_halo(frame)
 
 
-def chroma_hex() -> str:
-    return "#%02x%02x%02x" % CHROMA
+def _with_halo(frame: Image.Image) -> Image.Image:
+    """Puts a soft dark glow under the grains so they read on a light desktop too."""
+    halo = frame.split()[3].filter(ImageFilter.GaussianBlur(4))
+    halo = halo.point(lambda value: int(value * 0.32))
+    shadow = Image.new("RGBA", frame.size, (0, 0, 0, 0))
+    shadow.putalpha(halo)
+    return Image.alpha_composite(shadow, frame)

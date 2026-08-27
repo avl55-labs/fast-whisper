@@ -15,6 +15,8 @@ from typing import Callable
 
 from . import audio, autostart, history, models, output
 from .config import CONFIG_PATH, LOG_PATH, Config, app_dir
+from PIL import ImageTk
+
 from .widgets import (
     ACCENT,
     BG,
@@ -31,6 +33,7 @@ from .widgets import (
     Button,
     Card,
     Dropdown,
+    Gauge,
     ScrollArea,
     Switch,
     section_label,
@@ -82,8 +85,8 @@ class SettingsWindow:
 
         self.win = tk.Toplevel(root)
         self.win.title("FastWhisper")
-        self.win.geometry("920x640")
-        self.win.minsize(820, 560)
+        self.win.geometry("1000x660")
+        self.win.minsize(900, 560)
         self.win.configure(bg=BG)
         self.win.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -254,6 +257,12 @@ class SettingsWindow:
         Dropdown(slot, devices, self.cfg.input_device, self._set_device, width=26).pack()
 
         _row, slot = card.row(
+            "Boost quiet recordings",
+            "Lifts a low input to a usable level before recognition",
+        )
+        Switch(slot, self.cfg.auto_gain, self._setter("auto_gain")).pack()
+
+        _row, slot = card.row(
             "Silence removal", "Trims quiet parts before recognition, which is faster and cleaner"
         )
         Switch(slot, self.cfg.vad, self._setter("vad")).pack()
@@ -280,22 +289,35 @@ class SettingsWindow:
         tk.Label(
             parent,
             text=(
-                "Models run entirely on this machine. Larger ones are more accurate and slower; "
-                "the latency below is the wait after you release the hotkey, measured on this "
-                "CPU."
+                "Every model here runs on this machine, with no account and no cloud. Larger "
+                "ones are more accurate and slower; the speed and accuracy bars are relative to "
+                "each other, and the wait is what you actually get on this CPU."
             ),
-            bg=BG, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=620,
+            bg=BG, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=640,
         ).pack(fill="x", pady=(8, 4), padx=4)
 
         self.model_rows: dict[str, dict] = {}
-        section_label(parent, "AVAILABLE MODELS")
+        self._badges: list = []  # PhotoImages have to outlive this method
+        section_label(parent, "SPEECH MODELS")
         card = Card(parent)
         for info in models.CATALOGUE:
+            icon = ImageTk.PhotoImage(models.badge(info))
+            self._badges.append(icon)
             _row, slot = card.row(
                 info.title,
-                f"{info.latency} per phrase - {info.quality} - {info.languages}",
+                f"{info.author} · {info.packager} · {info.languages} "
+                f"· {info.latency}",
+                icon=icon,
+                wrap=380,
             )
-            state = tk.Label(slot, text="", bg=CARD, fg=MUTED, font=FONT_SMALL)
+
+            gauge = tk.Frame(slot, bg=CARD)
+            gauge.pack(side="left", padx=(0, 14))
+            tk.Label(gauge, text="Accuracy", bg=CARD, fg=MUTED, font=FONT_SMALL).pack()
+            Gauge(gauge, info.accuracy).pack(pady=(2, 0))
+
+            state = tk.Label(slot, text="", bg=CARD, fg=MUTED, font=FONT_SMALL, width=9,
+                             anchor="e")
             state.pack(side="left", padx=(0, 10))
             action = Button(slot, "Download", lambda i=info: self._download(i))
             action.pack(side="left", padx=(0, 6))
@@ -304,6 +326,15 @@ class SettingsWindow:
             self.model_rows[info.name] = {
                 "state": state, "action": action, "remove": remove, "info": info,
             }
+
+        tk.Label(
+            parent,
+            text=(
+                "Badges mark who trained each model, not a partnership: the weights are open "
+                "and used under their own licences."
+            ),
+            bg=BG, fg=MUTED, font=FONT_SMALL, anchor="w", justify="left", wraplength=640,
+        ).pack(fill="x", pady=(8, 4), padx=4)
 
     def _page_vocabulary(self, parent: tk.Frame) -> None:
         tk.Label(
@@ -437,7 +468,7 @@ class SettingsWindow:
             if downloaded:
                 size = models.human_size(models.disk_size(info))
                 widgets["state"].configure(
-                    text=f"in use - {size}" if active else size,
+                    text="in use" if active else size,
                     fg=ACCENT if active else MUTED,
                 )
                 widgets["action"].configure(text="Use")
@@ -445,7 +476,7 @@ class SettingsWindow:
                 widgets["action"].set_enabled(not active)
                 widgets["remove"].set_enabled(not active)
             else:
-                widgets["state"].configure(text=f"{info.size_gb:.2f} GB download", fg=MUTED)
+                widgets["state"].configure(text=f"{info.size_gb:.1f} GB", fg=MUTED)
                 widgets["action"].configure(text="Download")
                 widgets["action"].command = lambda i=info: self._download(i)
                 widgets["action"].set_enabled(True)

@@ -10,24 +10,17 @@ widgets directly - it posts callables through `UiHost.post`, which a periodic ta
 """
 from __future__ import annotations
 
-import ctypes
 import logging
 import queue
 import tkinter as tk
 from collections import deque
 from typing import Callable
 
-from PIL import ImageTk
-
 from .config import Config
-from .grains import COLUMNS, HEIGHT, WIDTH, GrainField, chroma_hex
+from .grains import COLUMNS, HEIGHT, WIDTH, GrainField
+from .layered import LayeredSurface, make_click_through, window_handle
 
 log = logging.getLogger(__name__)
-
-GWL_EXSTYLE = -20
-WS_EX_NOACTIVATE = 0x08000000
-WS_EX_TOOLWINDOW = 0x00000080
-WS_EX_TRANSPARENT = 0x00000020
 
 FRAME_MS = 33
 MARGIN = 26  # distance from the top edge of the screen
@@ -47,25 +40,14 @@ class Overlay:
         self._target_alpha = 0.0
         self._levels: deque[float] = deque([0.0] * COLUMNS, maxlen=COLUMNS)
         self._styled = False
-        self._photo: ImageTk.PhotoImage | None = None
+        self._position = (0, 0)
+        self.surface = LayeredSurface(WIDTH, HEIGHT)
 
-        chroma = chroma_hex()
         self.win = tk.Toplevel(root)
         self.win.withdraw()
         self.win.overrideredirect(True)
         self.win.attributes("-topmost", True)
-        self.win.attributes("-alpha", 0.0)
-        self.win.configure(bg=chroma)
-        try:
-            self.win.attributes("-transparentcolor", chroma)
-        except tk.TclError:
-            log.debug("transparent colour is unavailable, corners will be square")
-
-        self.canvas = tk.Canvas(
-            self.win, width=WIDTH, height=HEIGHT, bg=chroma, highlightthickness=0
-        )
-        self.canvas.pack()
-        self.image_item = self.canvas.create_image(0, 0, anchor="nw")
+        self.win.geometry(f"{WIDTH}x{HEIGHT}+0+0")
 
     # ---------- state ----------
 
@@ -79,6 +61,7 @@ class Overlay:
         self._target_alpha = ALPHA
         self.win.deiconify()
         self._apply_styles()
+        self.win.attributes("-topmost", True)
 
     def hide(self) -> None:
         self.state = "hidden"
@@ -94,22 +77,16 @@ class Overlay:
             y = int((screen_h - HEIGHT) / 2)
         else:
             y = MARGIN
+        self._position = (x, y)
         self.win.geometry(f"{WIDTH}x{HEIGHT}+{x}+{y}")
 
     def _apply_styles(self) -> None:
-        """Marks the window as non-activating and click-through."""
+        """Marks the window as layered, non-activating and click-through."""
         if self._styled:
             return
         try:
             self.win.update_idletasks()
-            user32 = ctypes.windll.user32
-            hwnd = user32.GetParent(self.win.winfo_id()) or self.win.winfo_id()
-            current = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
-            user32.SetWindowLongW(
-                hwnd,
-                GWL_EXSTYLE,
-                current | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT,
-            )
+            make_click_through(window_handle(self.win))
             self._styled = True
         except Exception:
             log.exception("could not apply the overlay window styles")
@@ -125,22 +102,21 @@ class Overlay:
             # Speech rarely exceeds an RMS of ~0.08, so scale it into a visible range.
             self._levels.appendleft(min(1.0, self.level_of() * 11.0))
 
+        if abs(self._alpha - self._target_alpha) > 0.005:
+            self._alpha += (self._target_alpha - self._alpha) * 0.3
+        else:
+            self._alpha = self._target_alpha
+
         state = self.state if self.state != "hidden" else "processing"
         try:
             frame = self.field.render(state, self._phase, list(self._levels))
-            self._photo = ImageTk.PhotoImage(frame)
-            self.canvas.itemconfigure(self.image_item, image=self._photo)
+            x, y = self._position
+            self.surface.update(window_handle(self.win), frame, x, y, self._alpha)
         except Exception:
             log.exception("frame rendering failed")
 
-        if abs(self._alpha - self._target_alpha) > 0.01:
-            self._alpha += (self._target_alpha - self._alpha) * 0.3
-            try:
-                self.win.attributes("-alpha", max(0.0, min(1.0, self._alpha)))
-            except tk.TclError:
-                pass
-            if self._alpha < 0.03 and self._target_alpha == 0.0:
-                self.win.withdraw()
+        if self._alpha < 0.03 and self._target_alpha == 0.0:
+            self.win.withdraw()
 
 
 class UiHost:
@@ -184,6 +160,17 @@ class UiHost:
         from .settings_window import SettingsWindow
 
         self.post(lambda: SettingsWindow.open(self.root, self.cfg, app, capture))
+
+    def refresh_settings_hotkey(self) -> None:
+        """Updates the hotkey shown in the settings window, if it is open."""
+        from .settings_window import SettingsWindow
+
+        def apply() -> None:
+            window = SettingsWindow._current
+            if window is not None and window.alive:
+                window.refresh_hotkey()
+
+        self.post(apply)
 
     def _pump(self) -> None:
         while True:

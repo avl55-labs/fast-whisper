@@ -43,7 +43,9 @@ class Card(tk.Frame):
         self.inner = tk.Frame(self, bg=CARD)
         self.inner.pack(fill="both", expand=True)
 
-    def row(self, title: str, subtitle: str = "") -> tuple[tk.Frame, tk.Frame]:
+    def row(
+        self, title: str, subtitle: str = "", icon=None, wrap: int = 430
+    ) -> tuple[tk.Frame, tk.Frame]:  # noqa: ANN001
         """Adds a row and returns (row frame, right-hand slot for the control)."""
         if self.inner.winfo_children():
             tk.Frame(self.inner, bg=BORDER, height=1).pack(fill="x", padx=14)
@@ -51,13 +53,18 @@ class Card(tk.Frame):
         row = tk.Frame(self.inner, bg=CARD)
         row.pack(fill="x", padx=16, pady=11)
 
+        if icon is not None:
+            holder = tk.Label(row, image=icon, bg=CARD)
+            holder.image = icon  # keep a reference; Tk does not own the PhotoImage
+            holder.pack(side="left", padx=(0, 12))
+
         text = tk.Frame(row, bg=CARD)
         text.pack(side="left", fill="x", expand=True)
         tk.Label(text, text=title, bg=CARD, fg=TEXT, font=FONT, anchor="w").pack(fill="x")
         if subtitle:
             tk.Label(
                 text, text=subtitle, bg=CARD, fg=MUTED, font=FONT_SMALL, anchor="w",
-                justify="left", wraplength=430,
+                justify="left", wraplength=wrap,
             ).pack(fill="x")
 
         slot = tk.Frame(row, bg=CARD)
@@ -202,6 +209,25 @@ class Button(tk.Label):
             fg=("white" if self.primary else TEXT) if enabled else DISABLED,
             cursor="hand2" if enabled else "arrow",
         )
+
+
+class Gauge(tk.Canvas):
+    """Segmented bar, the way a rating is shown in a model list."""
+
+    SEGMENTS = 5
+    SEGMENT_W = 9
+    SEGMENT_H = 3
+    GAP = 3
+
+    def __init__(self, parent: tk.Misc, value: int, colour: str = ACCENT) -> None:
+        width = self.SEGMENTS * (self.SEGMENT_W + self.GAP)
+        super().__init__(parent, width=width, height=10, bg=CARD, highlightthickness=0)
+        for index in range(self.SEGMENTS):
+            x = index * (self.SEGMENT_W + self.GAP)
+            self.create_rectangle(
+                x, 3, x + self.SEGMENT_W, 3 + self.SEGMENT_H,
+                fill=colour if index < value else "#dfe0e5", outline="",
+            )
 
 
 class ScrollArea(tk.Frame):

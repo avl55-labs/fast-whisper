@@ -24,9 +24,9 @@ LOG_PATH = app_dir() / "fastwhisper.log"
 @dataclass
 class Config:
     # Hotkey in the syntax of the `keyboard` package: "ctrl+alt+space", "f9", "right ctrl".
-    hotkey: str = "ctrl+alt+space"
+    hotkey: str = "ctrl+space"
     # "hold": record while the hotkey is held. "toggle": press to start, press again to stop.
-    mode: str = "hold"
+    mode: str = "toggle"
     # faster-whisper model: tiny, base, small, medium, large-v3, large-v3-turbo.
     # Whisper always runs its encoder over a fixed 30-second window, so latency barely
     # depends on how long you spoke: on a modern 8-core CPU expect roughly 0.6s for base,
@@ -50,6 +50,8 @@ class Config:
     overlay_position: str = "top"
     # Trim silence around speech before transcribing.
     vad: bool = True
+    # Lift quiet recordings before recognition; some microphones run very low by default.
+    auto_gain: bool = True
     # Recordings shorter than this are discarded as accidental key presses.
     min_seconds: float = 0.4
     # Hard cap on one recording so a stuck key cannot eat all memory.

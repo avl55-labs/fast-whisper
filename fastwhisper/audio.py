@@ -189,5 +189,28 @@ def list_input_devices() -> list[tuple[int, str]]:
     return devices
 
 
+SILENCE_PEAK = 0.002   # below this the input is muted or blocked, not merely quiet
+TARGET_PEAK = 0.35     # what a normalized recording is lifted to
+MAX_GAIN = 20.0
+
+
+def peak(audio: np.ndarray) -> float:
+    return float(np.abs(audio).max()) if len(audio) else 0.0
+
+
+def normalize(audio: np.ndarray) -> np.ndarray:
+    """Lifts a quiet recording towards a usable level.
+
+    Whisper's voice activity detector works on absolute loudness, so a microphone running
+    at a low system level gets its speech discarded as silence before recognition ever
+    sees it. Scaling is capped so hiss in an empty room is not amplified into noise.
+    """
+    current = peak(audio)
+    if current <= SILENCE_PEAK or current >= TARGET_PEAK:
+        return audio
+    gain = min(TARGET_PEAK / current, MAX_GAIN)
+    return (audio * gain).astype(np.float32, copy=False)
+
+
 def duration(audio: np.ndarray) -> float:
     return len(audio) / SAMPLE_RATE

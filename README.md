@@ -12,13 +12,14 @@ models on the CTranslate2 runtime), so nothing leaves your machine.
 
 ## How it works
 
-1. Hold `Ctrl+Alt+Space` (configurable) — the tray icon turns red and recording starts.
+1. Press `Ctrl+Space` — a panel of gold grains fades in at the top of the screen and
+   ripples with your voice.
 2. Speak.
-3. Release the key — the icon turns amber while the model transcribes.
+3. Press `Ctrl+Space` again — the pattern changes while the model transcribes.
 4. The text is pasted into the focused window.
 
-`Esc` while recording cancels without transcribing. A `toggle` mode is available if you
-prefer pressing once to start and once to stop.
+`Esc` while recording cancels without transcribing. Hold-to-talk is available too: set
+*Mode* to *Hold to talk* and the recording runs only while the key is down.
 
 ## Install
 
@@ -43,14 +44,16 @@ with the window you are dictating into. Turn it off or move it in *Settings -> G
 
 ## Settings
 
-Right-click the tray icon and choose *Settings*. Six pages:
+The tray icon carries only what you need mid-dictation — settings, copy the last result,
+quit. Everything else is in the settings window, which opens on *Settings* or a double
+click on the icon. Six pages:
 
 - **General** - hotkey, hold or toggle, language, model, where the text goes, the panel,
   sounds, launch at login.
-- **Sound** - microphone, silence trimming, the minimum and maximum length of a recording,
-  CPU threads.
-- **Models** - every model with its size, its measured latency and whether it is on disk.
-  Download and delete them here; the active one cannot be deleted.
+- **Sound** - microphone, boosting quiet input, silence trimming, the minimum and maximum
+  length of a recording, CPU threads.
+- **Models** - every model with who trained it, its accuracy, its measured latency and
+  its size on disk. Download and delete them here; the active one cannot be deleted.
 - **Vocabulary** - names and jargon the model should prefer. They are passed to Whisper as
   context before each recording.
 - **History** - everything recognized so far, searchable. Click an entry to copy it.
@@ -85,8 +88,8 @@ method, autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `hotkey` | `ctrl+alt+space` | Any combination in [`keyboard`][kb] syntax, e.g. `f9`, `right ctrl`. |
-| `mode` | `hold` | `hold` (push-to-talk) or `toggle`. |
+| `hotkey` | `ctrl+space` | Any combination in [`keyboard`][kb] syntax, e.g. `f9`, `right ctrl`. |
+| `mode` | `toggle` | `hold` (push-to-talk) or `toggle`. |
 | `model` | `small` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
 | `device` | `cpu` | `cuda` if you have an NVIDIA card and the CUDA libraries installed. |
 | `compute_type` | `int8` | `int8` on CPU, `float16` on CUDA. |
@@ -94,6 +97,7 @@ method, autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
 | `output` | `paste` | `paste`, `type` (key by key), or `clipboard` (no insertion). |
 | `beep` | `true` | Short beeps on start and stop. |
 | `vad` | `true` | Trim silence around speech before transcribing. |
+| `auto_gain` | `true` | Lift a quiet recording before recognition. |
 | `min_seconds` | `0.4` | Shorter recordings are discarded as accidental presses. |
 | `input_device` | `null` | Microphone index; `null` is the system default. |
 | `cpu_threads` | `0` | `0` means half of the logical cores. |
