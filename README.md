@@ -22,7 +22,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#settings">Settings</a> ·
   <a href="#choosing-a-model">Models</a> ·
-  <a href="#deploying-to-a-domain">Domain deployment</a> ·
+  <a href="#for-organisations">For organisations</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
@@ -59,7 +59,8 @@ keeps working with the network off.
 | Account | none | required |
 | Your voice | stays on the machine | uploaded for recognition |
 | Works offline | yes | no, or a weaker local mode |
-| Windows domain deployment | MSI, per-machine | rarely offered |
+| Windows domain deployment | MSI for Group Policy and Intune | rarely offered |
+| Commercial use | free, MIT | per-seat licence |
 | macOS, iOS | no | usually yes |
 | Cloud models, AI rewriting | no | usually yes |
 
@@ -86,36 +87,60 @@ The last two rows are the honest trade: this is a focused Windows tool, not a su
 `%LOCALAPPDATA%\Programs\FastWhisper`, needs no administrator rights and raises no UAC
 prompt. It can add FastWhisper to startup.
 
-### Deploying to a domain
+On the first launch it asks which model to use and downloads it - about 1.6 GB for the
+recommended one - into `%USERPROFILE%\.cache\huggingface`. Everything after that is
+offline.
 
-`FastWhisper-x.y.z.msi` on the same page is a per-machine package for Group Policy or
-Intune. It installs into `%ProgramFiles%\FastWhisper`, needs no interface and asks no
-questions:
+## For organisations
+
+`FastWhisper-x.y.z.msi` is built for fleets. It is a per-machine package: point a Group
+Policy software installation at it, or hand it to Intune or any other MDM, and it lands on
+every machine with the settings you chose, needing nobody to click anything. Group Policy
+installs run as SYSTEM with no user signed in, which is exactly what this package expects.
 
 ```powershell
 msiexec /i FastWhisper-0.1.0.msi /qn
+msiexec /i FastWhisper-0.1.0.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+msiexec /x FastWhisper-0.1.0.msi /qn
 ```
-
-Two properties are worth setting for a fleet:
 
 | Property | Effect |
 | --- | --- |
 | `AUTOSTART=1` | Starts FastWhisper for every user who signs in, through `HKLM\...\Run`. |
-| `MODELDIR=<path>` | Points every user at one model directory instead of downloading a copy per profile. |
+| `MODELDIR=<path>` | Points every user at one model directory instead of a copy per profile. |
 
-```powershell
-msiexec /i FastWhisper-0.1.0.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-```
+Why it suits a managed network:
 
-The shared directory has to be writable by whoever downloads a model first, and readable
-by everyone else. Each user still keeps their own settings and history under `%APPDATA%`,
-so hotkeys and vocabulary do not leak between accounts. Uninstall with
-`msiexec /x FastWhisper-0.1.0.msi /qn`.
+- **Nothing to license, nothing to account for.** No seats, no subscription, no sign-in, no
+  licence server. The MIT licence covers commercial use.
+- **No data leaves the machine.** Speech is recognized locally. The application has no
+  telemetry, no analytics, no crash reporting and no update check. The only outbound
+  request it can ever make is downloading a model from Hugging Face, once.
+- **It can be made fully offline.** Seed `MODELDIR` from one machine that has the model,
+  or copy the `models--*` folders into it, and the application never touches the network
+  at all. Useful for isolated segments.
+- **One model directory for everyone.** Without `MODELDIR` every profile downloads its own
+  copy - half a gigabyte for the default model. With it, once per machine.
+- **Per-user settings stay per-user.** Hotkeys, vocabulary and history live in `%APPDATA%`,
+  so nothing leaks between accounts on a shared computer.
+- **Clean removal.** Standard `msiexec /x`, with an upgrade code set, so newer versions
+  replace older ones instead of piling up in Programs and Features.
 
-On the first launch the app downloads the Whisper model (~1.6 GB for the default
-`large-v3-turbo`)
-into `%USERPROFILE%\.cache\huggingface`. The tray icon stays blue while that happens.
-Everything after that is offline.
+### About code signing
+
+The packages are **not code-signed**. A certificate costs a few hundred dollars a year,
+which this project does not charge anyone to cover. The practical consequence is that
+Windows SmartScreen warns about an unknown publisher on a manual install; Group Policy and
+Intune deployments are unaffected, since they do not consult SmartScreen.
+
+What is offered instead of a signature:
+
+- Every line of source is in this repository, including the build scripts that produce
+  these exact packages.
+- Published SHA-256 checksums for each release artefact, listed in the release notes.
+- You can build both packages yourself in a few minutes - see [Build from source](#build-from-source) -
+  and compare, or simply ship your own build and sign it with your organisation's own
+  certificate.
 
 ## The floating panel
 
@@ -255,6 +280,10 @@ py -3 -m venv .venv
   Build from source if you would rather not trust the release binary.
 
 ## Privacy
+
+No telemetry, no analytics, no crash reporting, no update check, no account. The only
+outbound request the application can make is downloading a speech model, once; seed the
+model directory and it never touches the network at all.
 
 Audio is recorded to memory and discarded after transcription. Recognized text is
 appended to `%APPDATA%\FastWhisper\history.jsonl` — set `save_history` to `false` to

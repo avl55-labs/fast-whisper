@@ -86,6 +86,11 @@ What changed, newest first. Dates are the day the work landed on `main`.
 
 **Deployment**
 
+- The README and the release notes now say plainly what the MSI is for: a managed network
+  where software arrives through Group Policy or an MDM rather than by hand, with no
+  licences to count and no data leaving the machines. Both also state that the packages
+  are unsigned, why, and what is offered instead - full source, reproducible builds and
+  published SHA-256 checksums.
 - An MSI for Group Policy and Intune, next to the per-user installer. It installs for the
   whole machine, needs no interface and takes two properties: `AUTOSTART=1` to start for
   every user who signs in, and `MODELDIR` to point them all at one model directory rather
