@@ -156,9 +156,19 @@ with the window you are dictating into. Turn it off or move it in *Settings -> G
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshot-general.png" alt="Settings" width="760"><br>
+  <img src="assets/screenshot-setup.png" alt="Choosing a model on the first launch" width="700">
+</p>
+<p align="center"><i>The first launch asks which model to use, and what each one costs you.</i></p>
+
+<p align="center">
+  <img src="assets/screenshot-general.png" alt="Settings" width="760">
+</p>
+<p align="center"><i>Settings. The interface language is the first thing on the page.</i></p>
+
+<p align="center">
   <img src="assets/screenshot-models.png" alt="Models" width="760">
 </p>
+<p align="center"><i>Models: who trained each one, how accurate it is, what it costs in disk and in waiting.</i></p>
 
 ## Settings
 
@@ -181,6 +191,10 @@ The interface speaks English and Russian. It follows Windows by default - a Russ
 Windows gets a Russian interface, anything else gets English - and *General → Interface
 language* overrides that. It is separate from the language you dictate in: a Russian
 interface is no reason to stop dictating in English.
+
+<p align="center">
+  <img src="assets/screenshot-general-ru.png" alt="The same page in Russian" width="700">
+</p>
 
 Anything set here is written to `%APPDATA%\FastWhisper\config.json` immediately.
 
