@@ -4,10 +4,15 @@ from __future__ import annotations
 import ctypes
 import logging
 import logging.handlers
+import os
 import sys
 
 from .config import LOG_PATH, Config
 from .single_instance import acquire
+
+# The Xet transfer backend of huggingface_hub stalls behind some networks and there is no
+# progress to show the user, so default to plain HTTPS. Set the variable yourself to override.
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
 
 def setup_logging() -> None:

@@ -26,7 +26,7 @@ Download `FastWhisper-x.y.z-setup.exe` from [Releases][rel] and run it. The inst
 per-user: it writes to `%LOCALAPPDATA%\Programs\FastWhisper`, needs no admin rights and
 raises no UAC prompt. It can optionally add FastWhisper to startup.
 
-On the first launch the app downloads the Whisper model (~1.6 GB for `large-v3-turbo`)
+On the first launch the app downloads the Whisper model (~0.5 GB for the default `small`)
 into `%USERPROFILE%\.cache\huggingface`. The tray icon stays blue while that happens.
 Everything after that is offline.
 
@@ -39,7 +39,7 @@ autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
 | --- | --- | --- |
 | `hotkey` | `ctrl+alt+space` | Any combination in [`keyboard`][kb] syntax, e.g. `f9`, `right ctrl`. |
 | `mode` | `hold` | `hold` (push-to-talk) or `toggle`. |
-| `model` | `large-v3-turbo` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
+| `model` | `small` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
 | `device` | `cpu` | `cuda` if you have an NVIDIA card and the CUDA libraries installed. |
 | `compute_type` | `int8` | `int8` on CPU, `float16` on CUDA. |
 | `language` | `ru` | Two-letter code, or `auto` to detect per recording. |
@@ -55,12 +55,21 @@ Edit the file and restart the app to apply.
 
 ## Choosing a model
 
-| Model | Size on disk | Quality | Notes |
+Whisper runs its encoder over a fixed 30-second window, so the wait after you release the
+hotkey barely depends on how long you spoke — a three-second phrase costs about as much as
+a nine-second one. Measured on an 8-core Ryzen 9 8945HS, `int8`, 16 threads:
+
+| Model | Size on disk | Latency per phrase | Quality |
 | --- | --- | --- | --- |
-| `small` | ~0.5 GB | acceptable | Fastest sensible option, noticeable errors on names. |
-| `medium` | ~1.5 GB | good | Slower than turbo with no real quality gain. |
-| `large-v3-turbo` | ~1.6 GB | very good | Default: near-large quality, much faster decoder. |
-| `large-v3` | ~3 GB | best | Only worth it on a CUDA GPU. |
+| `base` | ~0.15 GB | ~0.6 s | rough, fine for short English notes |
+| `small` | ~0.5 GB | ~1.6 s | decent — the default |
+| `medium` | ~1.5 GB | ~4.3 s | good, but `large-v3-turbo` beats it at a similar cost |
+| `large-v3-turbo` | ~1.6 GB | ~5.5 s | best quality on CPU |
+| `large-v3` | ~3 GB | slower still | only worth it on a CUDA GPU |
+
+Switch models from the tray menu; the new one loads in the background. On an NVIDIA GPU
+set `device` to `cuda` and `compute_type` to `float16` — `large-v3-turbo` then answers in
+well under a second and there is no reason to use anything smaller.
 
 ## Build from source
 

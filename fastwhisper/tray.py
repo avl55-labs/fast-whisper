@@ -15,7 +15,16 @@ from .icons import make_icon
 
 log = logging.getLogger(__name__)
 
-MODELS = ["tiny", "base", "small", "medium", "large-v3-turbo", "large-v3"]
+# Labels carry the measured CPU latency per phrase, because Whisper's encoder runs over a
+# fixed 30-second window and the wait barely depends on how long you actually spoke.
+MODELS = [
+    ("tiny", "tiny - fastest, rough"),
+    ("base", "base - ~0.6s, rough"),
+    ("small", "small - ~1.6s, decent"),
+    ("medium", "medium - ~4.3s, good"),
+    ("large-v3-turbo", "large-v3-turbo - ~5.5s, best"),
+    ("large-v3", "large-v3 - slowest, best"),
+]
 LANGUAGES = [("Russian", "ru"), ("English", "en"), ("Auto detect", "auto")]
 OUTPUTS = [
     ("Paste into window", "paste"),
@@ -99,12 +108,12 @@ class Tray:
                 Menu(
                     *[
                         MenuItem(
-                            name,
+                            label,
                             self._model_setter(name),
                             checked=self._checker("model", name),
                             radio=True,
                         )
-                        for name in MODELS
+                        for name, label in MODELS
                     ]
                 ),
             ),

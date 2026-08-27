@@ -3,17 +3,25 @@
 import sys
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
 ROOT = Path(SPECPATH).parent
 
-# CTranslate2 and onnxruntime ship native DLLs that PyInstaller does not find on its own.
-binaries = collect_dynamic_libs("ctranslate2") + collect_dynamic_libs("onnxruntime")
+# These ship native DLLs that PyInstaller does not discover on its own.
+binaries = (
+    collect_dynamic_libs("ctranslate2")
+    + collect_dynamic_libs("onnxruntime")
+    + collect_dynamic_libs("av")
+)
+
+# faster_whisper carries the Silero VAD models as package data.
+datas = collect_data_files("faster_whisper")
 
 hidden = [
     "faster_whisper",
     "ctranslate2",
     "onnxruntime",
+    "av",
     "sounddevice",
     "_sounddevice_data",
     "pystray._win32",
@@ -24,7 +32,7 @@ a = Analysis(
     [str(ROOT / "packaging" / "entry.py")],
     pathex=[str(ROOT)],
     binaries=binaries,
-    datas=[],
+    datas=datas,
     hiddenimports=hidden,
     hookspath=[],
     excludes=["tkinter", "matplotlib", "pytest", "torch"],

@@ -28,7 +28,10 @@ class Config:
     # "hold": record while the hotkey is held. "toggle": press to start, press again to stop.
     mode: str = "hold"
     # faster-whisper model: tiny, base, small, medium, large-v3, large-v3-turbo.
-    model: str = "large-v3-turbo"
+    # Whisper always runs its encoder over a fixed 30-second window, so latency barely
+    # depends on how long you spoke: on a modern 8-core CPU expect roughly 0.6s for base,
+    # 1.6s for small, 4.3s for medium and 5.5s for large-v3-turbo, per phrase.
+    model: str = "small"
     # "cpu" or "cuda". CUDA needs an NVIDIA card.
     device: str = "cpu"
     # int8 is the fastest on CPU; float16 only makes sense on CUDA.
@@ -55,6 +58,8 @@ class Config:
     save_history: bool = True
     # Optional prompt that biases the model towards your terms and names.
     prompt: str = ""
+    # Decoding beams. 1 is marginally faster, 5 is a little more accurate.
+    beam_size: int = 5
 
     @classmethod
     def load(cls) -> "Config":

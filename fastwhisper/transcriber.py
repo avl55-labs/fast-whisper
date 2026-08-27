@@ -60,7 +60,7 @@ class Transcriber:
         segments, _info = self._model.transcribe(
             audio,
             language=language,
-            beam_size=5,
+            beam_size=self.cfg.beam_size,
             vad_filter=self.cfg.vad,
             vad_parameters={"min_silence_duration_ms": 500},
             initial_prompt=self.cfg.prompt or None,
