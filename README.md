@@ -30,10 +30,42 @@ On the first launch the app downloads the Whisper model (~0.5 GB for the default
 into `%USERPROFILE%\.cache\huggingface`. The tray icon stays blue while that happens.
 Everything after that is offline.
 
+## The floating panel
+
+While you speak, a small panel appears near the bottom of the screen: a microphone and a
+waveform that follows your voice, so you can see the app is listening. When you let the
+hotkey go it turns amber and keeps animating until the text lands in your window, which is
+the part that is otherwise invisible - transcription takes a few seconds and nothing on
+screen would tell you it is running.
+
+The panel never takes focus and clicks pass straight through it, so it cannot interfere
+with the window you are dictating into. Turn it off with *Show the floating panel* in the
+tray menu, or move it with `overlay_position` (`bottom`, `top`, `center`) in the settings.
+
+## Choosing a hotkey
+
+*Hotkey -> Set a custom key...* in the tray menu opens a window that records whatever you
+press next; the current hotkey stays disarmed while it is open. There are presets in the
+same menu, and `hotkey` in the settings file accepts any [`keyboard`][kb] combination. What matters is how the key behaves the rest of the time:
+
+- **A single key** — `right ctrl`, `right alt`, `f9` — is the most comfortable to hold and
+  is *not* swallowed by FastWhisper, so it keeps working as itself. The trade-off is that
+  every ordinary use of the key starts a recording: with `right ctrl` a slow `Ctrl+C`
+  or a `Ctrl`-drag opens the microphone. Anything shorter than `min_seconds` is thrown
+  away, so short shortcuts are harmless — long ones are not. `right alt` is the safer of
+  the two, unless your layout uses AltGr to type characters.
+- **A combination** — `ctrl+alt+space` (the default), `ctrl+shift+space` — is suppressed
+  while FastWhisper runs, so the keystroke never reaches the app underneath. Pick one
+  nothing else wants.
+- **`ctrl+space`** works, but editors use it for autocomplete and Asian input methods use
+  it to switch; suppression makes it stop doing that everywhere.
+- **`win+space`** works too, and takes over the Windows keyboard-layout switcher. Avoid it
+  if you type in more than one language.
+
 ## Settings
 
-Right-click the tray icon for the common options — mode, language, model, output method,
-autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
+Right-click the tray icon for the common options — hotkey, mode, language, model, output
+method, autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
 
 | Key | Default | Meaning |
 | --- | --- | --- |

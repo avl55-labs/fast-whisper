@@ -35,7 +35,8 @@ a = Analysis(
     datas=datas,
     hiddenimports=hidden,
     hookspath=[],
-    excludes=["tkinter", "matplotlib", "pytest", "torch"],
+    # tkinter is kept: it draws the on-screen overlay.
+    excludes=["matplotlib", "pytest", "torch"],
     noarchive=False,
 )
 

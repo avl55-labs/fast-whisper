@@ -26,6 +26,18 @@ MODELS = [
     ("large-v3", "large-v3 - slowest, best"),
 ]
 LANGUAGES = [("Russian", "ru"), ("English", "en"), ("Auto detect", "auto")]
+
+# Presets worth offering. Single keys are the most comfortable to hold; the combinations
+# that collide with something the system or editors already use say so in the label.
+HOTKEYS = [
+    ("right ctrl", "Right Ctrl - one finger, but Ctrl shortcuts start it too"),
+    ("right alt", "Right Alt - one finger, rarely used otherwise"),
+    ("ctrl+alt+space", "Ctrl+Alt+Space"),
+    ("ctrl+shift+space", "Ctrl+Shift+Space"),
+    ("f9", "F9"),
+    ("ctrl+space", "Ctrl+Space - editors use it for autocomplete"),
+    ("win+space", "Win+Space - replaces the layout switcher"),
+]
 OUTPUTS = [
     ("Paste into window", "paste"),
     ("Type out", "type"),
@@ -41,9 +53,10 @@ def _open(path) -> None:  # noqa: ANN001
 
 
 class Tray:
-    def __init__(self, app, cfg: Config) -> None:  # noqa: ANN001 - avoids a circular import
+    def __init__(self, app, cfg: Config, ui=None) -> None:  # noqa: ANN001 - avoids a circular import
         self.app = app
         self.cfg = cfg
+        self.ui = ui
         self.detail = "Starting..."
         self.icon = pystray.Icon(
             "FastWhisper",
@@ -72,6 +85,24 @@ class Tray:
         return Menu(
             MenuItem(lambda _: self._title(), None, enabled=False),
             Menu.SEPARATOR,
+            MenuItem(
+                "Hotkey",
+                Menu(
+                    MenuItem("Set a custom key...", self._capture_hotkey, default=True),
+                    Menu.SEPARATOR,
+                    *[
+                        MenuItem(
+                            label,
+                            self._hotkey_setter(combo),
+                            checked=self._checker("hotkey", combo),
+                            radio=True,
+                        )
+                        for combo, label in HOTKEYS
+                    ],
+                    Menu.SEPARATOR,
+                    MenuItem("Something else - edit settings file", lambda: _open(CONFIG_PATH)),
+                ),
+            ),
             MenuItem(
                 "Mode",
                 Menu(
@@ -131,6 +162,10 @@ class Tray:
                     ]
                 ),
             ),
+            MenuItem(
+                "Show the floating panel", self._toggle_overlay,
+                checked=lambda _: self.cfg.overlay,
+            ),
             MenuItem("Beep on record", self._toggle_beep, checked=lambda _: self.cfg.beep),
             MenuItem(
                 "Show notifications",
@@ -165,6 +200,16 @@ class Tray:
     def _checker(self, field: str, value):  # noqa: ANN001, ANN201
         return lambda _: getattr(self.cfg, field) == value
 
+    def _hotkey_setter(self, combo: str):  # noqa: ANN201
+        def action() -> None:
+            if self.cfg.hotkey == combo:
+                return
+            self.cfg.hotkey = combo
+            self.cfg.save()
+            self.app.reload_hotkey()
+
+        return action
+
     def _set_mode(self, mode: str) -> None:
         self.cfg.mode = mode
         self.cfg.save()
@@ -191,6 +236,27 @@ class Tray:
 
         return action
 
+    def _capture_hotkey(self) -> None:
+        """Opens the capture window, with the current hotkey disarmed meanwhile."""
+        if self.ui is None:
+            _open(CONFIG_PATH)
+            return
+        if self.app.listener is not None:
+            self.app.listener.stop()
+
+        def save(combo: str) -> None:
+            self.cfg.hotkey = combo
+            self.cfg.save()
+            self.app.reload_hotkey()
+
+        self.ui.open_hotkey_capture(save, self.app.reload_hotkey)
+
+    def _toggle_overlay(self) -> None:
+        self.cfg.overlay = not self.cfg.overlay
+        self.cfg.save()
+        if not self.cfg.overlay and self.ui is not None:
+            self.ui.post(self.ui.overlay.hide)
+
     def _toggle_beep(self) -> None:
         self.cfg.beep = not self.cfg.beep
         self.cfg.save()
@@ -209,6 +275,8 @@ class Tray:
     def _quit(self) -> None:
         self.app.shutdown()
         self.icon.stop()
+        if self.ui is not None:
+            self.ui.stop()
 
     # ---------- run ----------
 

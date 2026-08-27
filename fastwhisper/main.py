@@ -6,6 +6,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import threading
 
 from .config import LOG_PATH, Config
 from .single_instance import acquire
@@ -46,18 +47,34 @@ def main() -> int:
     log.info("starting FastWhisper (model=%s, hotkey=%s)", cfg.model, cfg.hotkey)
 
     from .app import FastWhisperApp
+    from .overlay import UiHost
     from .tray import Tray
 
     app = FastWhisperApp(cfg)
-    tray = Tray(app, cfg)
-    app.on_state = tray.on_state
+    # Tk insists on owning the main thread, so the tray runs beside it. On Windows pystray
+    # pumps its own message loop, which is happy anywhere.
+    ui = UiHost(cfg, lambda: app.recorder.level)
+    tray = Tray(app, cfg, ui)
+
+    def on_state(state: str, detail: str) -> None:
+        tray.on_state(state, detail)
+        ui.on_state(state, detail)
+
+    app.on_state = on_state
     app.start()
+
+    tray_thread = threading.Thread(target=tray.run, name="tray", daemon=True)
+    tray_thread.start()
     try:
-        tray.run()
+        ui.run()
     except KeyboardInterrupt:
         pass
     finally:
         app.shutdown()
+        try:
+            tray.icon.stop()
+        except Exception:
+            log.debug("tray icon was already gone", exc_info=True)
     log.info("stopped")
     return 0
 

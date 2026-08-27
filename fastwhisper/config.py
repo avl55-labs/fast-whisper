@@ -44,6 +44,10 @@ class Config:
     beep: bool = True
     # Tray balloon notifications with the recognized text.
     notifications: bool = False
+    # Floating panel that shows recording and transcription progress.
+    overlay: bool = True
+    # Where the panel sits: "bottom", "top" or "center".
+    overlay_position: str = "bottom"
     # Trim silence around speech before transcribing.
     vad: bool = True
     # Recordings shorter than this are discarded as accidental key presses.
