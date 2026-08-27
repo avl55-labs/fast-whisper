@@ -3,55 +3,84 @@
 </p>
 
 <p align="center">
-  <b>Offline dictation for Windows.</b><br>
-  Press a key, speak, and the text appears in whatever window you were typing in.
+  <b>Dictation for Windows that runs on your own machine.</b><br>
+  Press a key, speak, press it again - the text appears in whatever window you were typing in.
 </p>
 
 <p align="center">
-  <a href="https://github.com/avl55-labs/fast-whisper/releases/latest">Download</a> ·
+  <a href="https://github.com/avl55-labs/fast-whisper/releases/latest">
+    <img alt="Latest release" src="https://img.shields.io/github/v/release/avl55-labs/fast-whisper?style=flat-square&color=e2b254&label=release"></a>
+  <a href="https://github.com/avl55-labs/fast-whisper/releases">
+    <img alt="Downloads" src="https://img.shields.io/github/downloads/avl55-labs/fast-whisper/total?style=flat-square&color=e2b254"></a>
+  <a href="LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/avl55-labs/fast-whisper?style=flat-square&color=e2b254"></a>
+  <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-2f6fe0?style=flat-square">
+  <img alt="Runs offline" src="https://img.shields.io/badge/cloud-not%20required-0f9d7d?style=flat-square">
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
   <a href="#settings">Settings</a> ·
   <a href="#choosing-a-model">Models</a> ·
+  <a href="#deploying-to-a-domain">Domain deployment</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
----
+<p align="center">
+  <img src="assets/screenshot-overlay.png" alt="The panel that appears while you dictate" width="560">
+</p>
+
+## Quick start
+
+1. Download the installer from [Releases][rel] and run it. No administrator rights, no UAC
+   prompt.
+2. Wait for the tray icon to stop being blue - that is the speech model downloading, once.
+3. Put your cursor where you want the text, press `Ctrl+Space`, say something, press it
+   again. `Esc` throws a recording away.
 
 ## Why
 
 Dictation is the fastest way to get a paragraph out of your head, and on Windows the good
-tools for it are subscriptions: SuperWhisper, Wispr Flow and the rest bill monthly, want an
+tools for it are subscriptions. SuperWhisper, Wispr Flow and the rest bill monthly, want an
 account, and send your voice to their servers.
 
-FastWhisper does the same job with none of that. Speech recognition runs on your own
-machine through [faster-whisper][fw] - OpenAI's Whisper models on the CTranslate2 runtime -
-so your voice never leaves the computer, there is nothing to log in to, nothing to pay, and
-it keeps working with the network off. It is a tray application: no window in your way, one
-hotkey, and the text lands where your cursor already is.
+FastWhisper does the same job with none of that. Recognition runs on your own machine
+through [faster-whisper][fw] - OpenAI's Whisper models on the CTranslate2 runtime - so your
+voice never leaves the computer, there is nothing to log in to, nothing to pay, and it
+keeps working with the network off.
+
+|  | FastWhisper | Typical paid app |
+| --- | --- | --- |
+| Cost | free, MIT | $8-15 a month |
+| Account | none | required |
+| Your voice | stays on the machine | uploaded for recognition |
+| Works offline | yes | no, or a weaker local mode |
+| Windows domain deployment | MSI, per-machine | rarely offered |
+| macOS, iOS | no | usually yes |
+| Cloud models, AI rewriting | no | usually yes |
+
+The last two rows are the honest trade: this is a focused Windows tool, not a suite.
+
+## What you get
+
+| | |
+| --- | --- |
+| **One hotkey** | `Ctrl+Space` to toggle, or hold-to-talk. Any key or combination can be recorded, including bare `Right Ctrl`. |
+| **A panel that shows the work** | A lattice of gold grains ripples with your voice, then changes pattern while the model transcribes. It never takes focus, and clicks pass through it. |
+| **Ten models** | Whisper and Distil-Whisper, from Tiny at a third of a second per phrase to Large v3. Download and delete them in the app. |
+| **Your words** | A vocabulary of names and jargon is fed to the model as context, so it stops mangling them. |
+| **A history** | Everything recognized, searchable, one click to copy. |
+| **Nothing phones home** | One download for the model, then no network at all. No telemetry, ever. |
 
 > Not affiliated with the `faster-whisper` library, with OpenAI, or with anyone else whose
 > models it can run. FastWhisper is an application that uses open models under their own
 > licences.
 
-<p align="center">
-  <img src="assets/screenshot-overlay.png" alt="The panel that appears while you dictate" width="520">
-</p>
-
-## How it works
-
-1. Press `Ctrl+Space` — a panel of gold grains fades in at the top of the screen and
-   ripples with your voice.
-2. Speak.
-3. Press `Ctrl+Space` again — the pattern changes while the model transcribes.
-4. The text is pasted into the focused window.
-
-`Esc` while recording cancels without transcribing. Hold-to-talk is available too: set
-*Mode* to *Hold to talk* and the recording runs only while the key is down.
-
 ## Install
 
-Download `FastWhisper-x.y.z-setup.exe` from [Releases][rel] and run it. The installer is
-per-user: it writes to `%LOCALAPPDATA%\Programs\FastWhisper`, needs no admin rights and
-raises no UAC prompt. It can optionally add FastWhisper to startup.
+`FastWhisper-x.y.z-setup.exe` from [Releases][rel] installs for you alone: it writes to
+`%LOCALAPPDATA%\Programs\FastWhisper`, needs no administrator rights and raises no UAC
+prompt. It can add FastWhisper to startup.
 
 ### Deploying to a domain
 
@@ -140,10 +169,10 @@ same menu, and `hotkey` in the settings file accepts any [`keyboard`][kb] combin
 - **`win+space`** works too, and takes over the Windows keyboard-layout switcher. Avoid it
   if you type in more than one language.
 
-## Settings
+## The settings file
 
-Right-click the tray icon for the common options — hotkey, mode, language, model, output
-method, autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
+Everything the window writes lands in `%APPDATA%\FastWhisper\config.json`, and a few
+options exist only there:
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -162,7 +191,7 @@ method, autostart. Everything else lives in `%APPDATA%\FastWhisper\config.json`:
 | `cpu_threads` | `0` | `0` means half of the logical cores. |
 | `prompt` | `""` | Optional bias text: names, jargon, spelling you want kept. |
 
-Edit the file and restart the app to apply.
+Edit the file and restart the app to apply. Anything changed in the settings window is written here immediately.
 
 ## Choosing a model
 

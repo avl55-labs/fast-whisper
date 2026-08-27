@@ -128,18 +128,25 @@ def banner() -> Image.Image:
 
 
 def mark(size: int = 512) -> Image.Image:
+    """The application icon.
+
+    The banner can afford the whole lattice; an icon cannot. Tried at 16 pixels, three
+    rows of small grains turn to mush, and so do columns of them - the shapes merge into
+    a smudge rather than into bars. What survives is a single grain lifted out of the
+    field with two quiet ones beside it: the same motif, one element instead of ninety.
+    """
     canvas = Image.new("RGBA", (size * SS, size * SS), (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
     draw.rounded_rectangle(
         (0, 0, size * SS - 1, size * SS - 1), radius=size * SS * 0.22, fill=INK
     )
-    lattice(
-        draw,
-        (size * 0.16 * SS, size * 0.3 * SS, size * 0.84 * SS, size * 0.7 * SS),
-        columns=13, rows=3, amplitude=size * 0.1 * SS, spacing=size * 0.13 * SS,
-        scale=size * SS / 90,
-    )
-    canvas = glow(canvas, radius=int(size * SS * 0.012), strength=0.4)
+
+    centre = size * SS * 0.5
+    diamond(draw, centre, centre, size * SS * 0.20, 0.0, shade(1.0))
+    for offset in (-0.27, 0.27):
+        diamond(draw, centre + size * SS * offset, centre, size * SS * 0.075, 0.0, shade(0.45))
+
+    canvas = glow(canvas, radius=int(size * SS * 0.02), strength=0.4)
     return canvas.resize((size, size), Image.LANCZOS)
 
 

@@ -17,11 +17,22 @@ from PIL import Image, ImageDraw, ImageFilter
 WIDTH, HEIGHT = 420, 88
 SUPERSAMPLE = 3
 
-# The shimmer runs along this ramp, from cold ash to lit gold.
-DARK = (34, 32, 28)
-EMBER = (104, 78, 34)
-GOLD = (226, 178, 84)
-BRIGHT = (255, 233, 176)
+# Two ramps, one per state, so a glance tells you which one you are in. Gold sits at
+# about 40 degrees on the colour wheel and the cool ramp sits opposite it, near 220, which
+# is as far apart as two hues get while both stay legible over a bright or a dark desktop.
+WARM = (
+    (34, 32, 28),      # resting
+    (104, 78, 34),     # ember
+    (226, 178, 84),    # gold
+    (255, 233, 176),   # lit
+)
+COOL = (
+    (26, 31, 38),
+    (34, 84, 132),
+    (84, 160, 226),
+    (190, 226, 255),
+)
+PALETTES = {"recording": WARM, "processing": COOL}
 
 COLUMNS = 30
 ROWS = 3
@@ -36,20 +47,21 @@ def _mix(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[in
     )
 
 
-def _shade(t: float) -> tuple[int, int, int, int]:
+def _shade(t: float, palette: tuple = WARM) -> tuple[int, int, int, int]:
     """Colour and opacity for a grain, from resting to fully lit.
 
     Without a panel behind them the quiet grains must not simply go dark - on a light
     desktop that reads as dirt. They fade out instead, so the field dissolves rather
     than turning grey.
     """
+    resting, mid, full, lit = palette
     t = max(0.0, min(1.0, t))
     if t < 0.45:
-        colour = _mix(DARK, EMBER, t / 0.45)
+        colour = _mix(resting, mid, t / 0.45)
     elif t < 0.8:
-        colour = _mix(EMBER, GOLD, (t - 0.45) / 0.35)
+        colour = _mix(mid, full, (t - 0.45) / 0.35)
     else:
-        colour = _mix(GOLD, BRIGHT, (t - 0.8) / 0.2)
+        colour = _mix(full, lit, (t - 0.8) / 0.2)
     alpha = int(70 + 185 * (t ** 0.7))
     return (*colour, min(255, alpha))
 
@@ -75,6 +87,7 @@ class GrainField:
         canvas = Image.new("RGBA", (WIDTH * scale, HEIGHT * scale), (0, 0, 0, 0))
         draw = ImageDraw.Draw(canvas)
 
+        palette = PALETTES.get(state, WARM)
         margin_x, margin_y = 26, 20
         span_x = WIDTH - margin_x * 2
         step_x = span_x / (COLUMNS - 1)
@@ -121,7 +134,7 @@ class GrainField:
 
                 _diamond(
                     draw, x * scale, y * scale, max(1.0, size) * scale, angle,
-                    _shade(heat * row_fade + 0.05),
+                    _shade(heat * row_fade + 0.05, palette),
                 )
 
         frame = canvas.resize((WIDTH, HEIGHT), Image.LANCZOS)

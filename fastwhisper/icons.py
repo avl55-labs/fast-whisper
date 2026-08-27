@@ -6,11 +6,13 @@ from PIL import Image, ImageDraw
 SIZE = 64
 
 COLORS = {
+    # The same two hues the floating panel uses: gold while the microphone is open, its
+    # opposite while the model works, so the tray and the panel say the same thing.
     "idle": (110, 118, 129),      # grey: waiting for the hotkey
-    "loading": (88, 133, 214),    # blue: model is loading
-    "recording": (219, 68, 68),   # red: microphone is open
-    "working": (222, 158, 54),    # amber: transcribing
-    "error": (150, 40, 40),       # dark red: something failed
+    "loading": (84, 160, 226),    # blue: model is loading
+    "recording": (226, 178, 84),  # gold: microphone is open
+    "working": (84, 160, 226),    # blue: transcribing
+    "error": (196, 72, 62),       # red: something failed
 }
 
 
