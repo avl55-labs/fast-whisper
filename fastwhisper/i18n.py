@@ -100,7 +100,11 @@ RU = {
         "Удерживать клавишу во время речи или нажать один раз",
     "Hold to talk": "Удерживать клавишу",
     "Toggle on and off": "Нажатием включать и выключать",
-    "Language": "Язык распознавания",
+    "Recognition language": "Язык распознавания",
+    "What you speak. More accurate when it is not left to guesswork":
+        "На каком языке вы говорите. Точнее, когда язык задан явно",
+    "The language of this window, not the one you dictate in":
+        "Язык этого окна, а не тот, на котором вы диктуете",
     "Recognition is more accurate with a fixed language":
         "С заданным языком распознавание точнее",
     "Russian": "Русский",

@@ -210,6 +210,14 @@ class SettingsWindow:
     # ---------- pages ----------
 
     def _page_general(self, parent: tk.Frame) -> None:
+        section_label(parent, _("INTERFACE"))
+        card = Card(parent)
+        _row, slot = card.row(
+            _("Interface language"),
+            _("The language of this window, not the one you dictate in"),
+        )
+        Dropdown(slot, translated(UI_LANGUAGES), self.cfg.ui_language, self._set_ui_language).pack()
+
         section_label(parent, _("DICTATION"))
         card = Card(parent)
 
@@ -226,7 +234,10 @@ class SettingsWindow:
         _row, slot = card.row(_("Mode"), _("Hold the key while speaking, or press once to start"))
         Dropdown(slot, translated(MODES), self.cfg.mode, self._set_mode).pack()
 
-        _row, slot = card.row(_("Language"), _("Recognition is more accurate with a fixed language"))
+        _row, slot = card.row(
+            _("Recognition language"),
+            _("What you speak. More accurate when it is not left to guesswork"),
+        )
         Dropdown(slot, translated(LANGUAGES), self.cfg.language, self._setter("language")).pack()
 
         _row, slot = card.row(_("Model"), _("Change and download models on the Models page"))
@@ -270,11 +281,6 @@ class SettingsWindow:
         card = Card(parent)
         _row, slot = card.row(_("Launch at login"), _("Start FastWhisper when you sign in to Windows"))
         Switch(slot, autostart.is_enabled(), self._set_autostart).pack()
-
-        _row, slot = card.row(
-            _("Interface language"), _("Follow Windows") if self.cfg.ui_language == "auto" else ""
-        )
-        Dropdown(slot, translated(UI_LANGUAGES), self.cfg.ui_language, self._set_ui_language).pack()
 
         _row, slot = card.row(_("Settings file"), str(CONFIG_PATH))
         Button(slot, _("Open"), lambda: _open(CONFIG_PATH)).pack()
