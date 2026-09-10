@@ -23,7 +23,8 @@ LOG_PATH = app_dir() / "fastwhisper.log"
 
 @dataclass
 class Config:
-    # Hotkey in the syntax of the `keyboard` package: "ctrl+alt+space", "f9", "right ctrl".
+    # Hotkey: "ctrl+space", "ctrl+alt+space", "f9", "right ctrl". A sided name such as
+    # "right ctrl" matches that key alone; a bare "ctrl" matches either side.
     hotkey: str = "ctrl+space"
     # "hold": record while the hotkey is held. "toggle": press to start, press again to stop.
     mode: str = "toggle"

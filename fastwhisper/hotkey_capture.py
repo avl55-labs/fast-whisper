@@ -1,8 +1,9 @@
 """Dialog that records the key combination you want to use.
 
-Keys are recognised by scan code rather than by the name the `keyboard` package reports,
-so the left and right modifiers stay apart - holding Right Alt should not register as a
-plain Alt, otherwise the left one would trigger dictation too.
+Keys are identified by their virtual key code, which the low-level hook reports with the
+side already resolved: Right Ctrl arrives as 0xA3 and nothing else. Holding Right Alt
+therefore records as Right Alt rather than as a plain Alt that the left one would also
+trigger.
 """
 from __future__ import annotations
 
@@ -10,21 +11,19 @@ import logging
 import tkinter as tk
 from typing import Callable
 
-import keyboard
-
+from . import keys
 from .config import Config
-from .hotkey import HotkeyError, scan_codes_for
+from .hotkey import HotkeyError
 from .i18n import _
 
 log = logging.getLogger(__name__)
 
-# Sided names first: a lookup wins on the more specific entry.
-MODIFIERS = [
-    "left ctrl", "right ctrl",
-    "left alt", "right alt",
-    "left shift", "right shift",
-    "left windows", "right windows",
-]
+MODIFIER_NAMES = {
+    0xA2: "left ctrl", 0xA3: "right ctrl",
+    0xA0: "left shift", 0xA1: "right shift",
+    0xA4: "left alt", 0xA5: "right alt",
+    0x5B: "left windows", 0x5C: "right windows",
+}
 GENERIC = {
     "left ctrl": "ctrl", "right ctrl": "ctrl",
     "left alt": "alt", "right alt": "alt",
@@ -37,17 +36,6 @@ BACKGROUND = "#1b1c20"
 FOREGROUND = "#e8e9ec"
 MUTED = "#8b8f9a"
 ACCENT = "#5b8def"
-
-
-def _code_map() -> dict[int, str]:
-    mapping: dict[int, str] = {}
-    for name in MODIFIERS:
-        try:
-            for code in scan_codes_for(name):
-                mapping[code] = name
-        except ValueError:
-            continue
-    return mapping
 
 
 def build_combo(pressed: list[str]) -> str:
@@ -80,10 +68,9 @@ class HotkeyCapture:
         self.on_save = on_save
         self.on_close = on_close
         self._saving = False
-        self.codes = _code_map()
         self.pressed: list[str] = []
         self.captured = ""
-        self._hook = None
+        self._handle = None
 
         self.win = tk.Toplevel(root)
         self.win.title(_("FastWhisper - set hotkey"))
@@ -130,7 +117,8 @@ class HotkeyCapture:
 
         self._centre()
         self.win.focus_force()
-        self._hook = keyboard.hook(self._on_event)
+        keys.start()
+        self._handle = keys.listen(self._on_event)
 
     def _centre(self) -> None:
         self.win.update_idletasks()
@@ -141,26 +129,26 @@ class HotkeyCapture:
 
     # ---------- capture ----------
 
-    def _name_of(self, event) -> str:  # noqa: ANN001 - keyboard.KeyboardEvent
-        return self.codes.get(event.scan_code) or (event.name or "").lower()
+    def _name_of(self, event: keys.KeyEvent) -> str:
+        return MODIFIER_NAMES.get(event.vk) or event.name
 
-    def _on_event(self, event) -> None:  # noqa: ANN001 - runs on the keyboard hook thread
+    def _on_event(self, event: keys.KeyEvent) -> None:  # runs on the hook's worker thread
         name = self._name_of(event)
         if not name:
             return
         if name == "esc":
-            if event.event_type == keyboard.KEY_DOWN:
+            if event.down:
                 self.win.after(0, self.close)
             return
 
-        if event.event_type == keyboard.KEY_DOWN:
+        if event.down:
             if name not in self.pressed:
                 self.pressed.append(name)
             combo = build_combo(self.pressed)
             if combo:
                 self.captured = combo
                 self.win.after(0, self._show, combo)
-        elif event.event_type == keyboard.KEY_UP and name in self.pressed:
+        elif name in self.pressed:
             self.pressed.remove(name)
 
     def _show(self, combo: str) -> None:
@@ -174,8 +162,8 @@ class HotkeyCapture:
         if not combo:
             return
         try:
-            keyboard.parse_hotkey(combo)
-        except Exception as exc:
+            keys.parse(combo)
+        except keys.UnknownKey as exc:
             self.hint.configure(
                 text=_("{combo} cannot be used: {error}").format(combo=combo, error=exc)
             )
@@ -188,12 +176,9 @@ class HotkeyCapture:
             log.error("%s", exc)
 
     def close(self) -> None:
-        if self._hook is not None:
-            try:
-                keyboard.unhook(self._hook)
-            except (KeyError, ValueError):
-                pass
-            self._hook = None
+        if self._handle is not None:
+            keys.unlisten(self._handle)
+            self._handle = None
         try:
             self.win.destroy()
         except tk.TclError:

@@ -99,9 +99,9 @@ every machine with the settings you chose, needing nobody to click anything. Gro
 installs run as SYSTEM with no user signed in, which is exactly what this package expects.
 
 ```powershell
-msiexec /i FastWhisper-0.1.0.msi /qn
-msiexec /i FastWhisper-0.1.0.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-msiexec /x FastWhisper-0.1.0.msi /qn
+msiexec /i FastWhisper-0.1.1.msi /qn
+msiexec /i FastWhisper-0.1.1.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+msiexec /x FastWhisper-0.1.1.msi /qn
 ```
 
 | Property | Effect |
@@ -129,9 +129,33 @@ Why it suits a managed network:
 ### About code signing
 
 The packages are **not code-signed**. A certificate costs a few hundred dollars a year,
-which this project does not charge anyone to cover. The practical consequence is that
-Windows SmartScreen warns about an unknown publisher on a manual install; Group Policy and
-Intune deployments are unaffected, since they do not consult SmartScreen.
+this project charges nobody anything, and there is no budget for one yet. That is the
+whole reason. It costs you two things.
+
+SmartScreen warns about an unknown publisher on a manual install. Group Policy and Intune
+deployments are unaffected, since they do not consult SmartScreen.
+
+Microsoft Defender also decides, now and then, that an unsigned PyInstaller program is
+`Trojan:Win32/Wacatac` or `Trojan:Win32/Bearfoos`. Both are false positives from a
+machine-learning heuristic reacting to how the program is packaged rather than to
+anything in it, and Defender may quarantine FastWhisper or stop it mid-run. Until there
+is a signature, the answer is an exclusion — as an administrator:
+
+```powershell
+Add-MpPreference -ExclusionPath "$env:LOCALAPPDATA\Programs\FastWhisper"
+```
+
+The folder depends on how FastWhisper got there:
+
+| How it was installed | Folder to exclude |
+| --- | --- |
+| `FastWhisper-x.y.z-setup.exe` | `%LOCALAPPDATA%\Programs\FastWhisper` |
+| `FastWhisper-x.y.z.msi` | `%ProgramFiles%\FastWhisper` |
+| Built from source | `<repository>\dist\FastWhisper`, and the repository itself while building |
+
+Reporting a detection is what eventually clears it for everyone, so it is worth the two
+minutes: [submit the file to Microsoft](https://www.microsoft.com/en-us/wdsi/filesubmission)
+as a false positive.
 
 What is offered instead of a signature:
 
@@ -198,7 +222,9 @@ Anything set here is written to `%APPDATA%\FastWhisper\config.json` immediately.
 
 *Hotkey -> Set a custom key...* in the tray menu opens a window that records whatever you
 press next; the current hotkey stays disarmed while it is open. There are presets in the
-same menu, and `hotkey` in the settings file accepts any [`keyboard`][kb] combination. What matters is how the key behaves the rest of the time:
+same menu, and `hotkey` in the settings file takes the same names. A sided name — `right
+ctrl` — matches that key alone; a bare `ctrl` matches either. What matters is how the key
+behaves the rest of the time:
 
 - **A single key** — `right ctrl`, `right alt`, `f9` — is the most comfortable to hold and
   is *not* swallowed by FastWhisper, so it keeps working as itself. The trade-off is that
@@ -206,9 +232,10 @@ same menu, and `hotkey` in the settings file accepts any [`keyboard`][kb] combin
   or a `Ctrl`-drag opens the microphone. Anything shorter than `min_seconds` is thrown
   away, so short shortcuts are harmless — long ones are not. `right alt` is the safer of
   the two, unless your layout uses AltGr to type characters.
-- **A combination** — `ctrl+alt+space` (the default), `ctrl+shift+space` — is suppressed
-  while FastWhisper runs, so the keystroke never reaches the app underneath. Pick one
-  nothing else wants.
+- **A combination** — `ctrl+space` (the default), `ctrl+alt+space` — has its *last* key
+  swallowed while FastWhisper runs, so the keystroke never reaches the app underneath.
+  The modifiers are never touched: Ctrl stays Ctrl for everything else on the machine,
+  including the layout switcher. Pick a combination nothing else wants.
 - **`ctrl+space`** works, but editors use it for autocomplete and Asian input methods use
   it to switch; suppression makes it stop doing that everywhere.
 - **`win+space`** works too, and takes over the Windows keyboard-layout switcher. Avoid it
@@ -221,7 +248,7 @@ options exist only there:
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `hotkey` | `ctrl+space` | Any combination in [`keyboard`][kb] syntax, e.g. `f9`, `right ctrl`. |
+| `hotkey` | `ctrl+space` | A key or combination: `f9`, `right ctrl`, `ctrl+alt+space`. |
 | `mode` | `toggle` | `hold` (push-to-talk) or `toggle`. |
 | `model` | `large-v3-turbo` | `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo`. |
 | `device` | `cpu` | `cuda` if you have an NVIDIA card and the CUDA libraries installed. |
@@ -268,7 +295,7 @@ cd fast-whisper
 powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 ```
 
-The result is `dist\FastWhisper\FastWhisper.exe` and `dist\FastWhisper-0.1.0-setup.exe`.
+The result is `dist\FastWhisper\FastWhisper.exe` and `dist\FastWhisper-0.1.1-setup.exe`.
 
 To run without building:
 
@@ -286,8 +313,16 @@ py -3 -m venv .venv
 - **Text is not pasted.** Some apps ignore synthetic `Ctrl+V`. Switch `output` to `type`.
 - **Nothing is recognized.** Check the microphone under `input_device`; the log at
   `%APPDATA%\FastWhisper\fastwhisper.log` records every recording and its length.
-- **Antivirus flags the exe.** Unsigned PyInstaller builds are a common false positive.
-  Build from source if you would rather not trust the release binary.
+- **Ctrl behaves as though it were held down.** Fixed in 0.1.1. Earlier versions could
+  strand a modifier — most reliably when the keyboard layout was switched with the
+  right-hand `Ctrl+Shift` — and the only cure was to press and release the *left* Ctrl.
+  If you are on an older build, upgrade; the current one also releases a modifier any
+  other program has stranded, each time it delivers text.
+- **Defender quarantines the exe, or kills it while it runs.** A false positive on the
+  missing signature — see [About code signing](#about-code-signing) for the folder to
+  exclude and how to report it. A process killed this way leaves a giveaway in the log:
+  `OSError: [Errno 22]` on the application's own `.exe`, which is the interpreter finding
+  its archive pulled out from under it.
 
 ## Privacy
 
@@ -305,7 +340,6 @@ download from Hugging Face.
 MIT. See [LICENSE](LICENSE).
 
 [fw]: https://github.com/SYSTRAN/faster-whisper
-[kb]: https://github.com/boppreh/keyboard#api
 [inno]: https://jrsoftware.org/isinfo.php
 [wix]: https://wixtoolset.org/
 [rel]: https://github.com/avl55-labs/fast-whisper/releases

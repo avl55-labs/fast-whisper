@@ -4,6 +4,64 @@ What changed, newest first. Dates are the day the work landed on `main`.
 
 ## Unreleased
 
+### 2026-09-10 - 0.1.1 - The keyboard, taken back from the library
+
+**Ctrl no longer sticks**
+
+- The application has its own low-level keyboard hook and no longer depends on the
+  `keyboard` package. That package could not suppress a chord without first suppressing
+  its modifiers: it swallowed every Ctrl press, waited to see whether the rest of the
+  chord followed, and when it did not, put the key back with `keybd_event`. That call
+  carries the scan code in a single byte and cannot set the extended flag, so a
+  suppressed *right* Ctrl came back as a plain, non-extended one. The physical key-up a
+  moment later did carry the flag, released the wrong key, and left Ctrl held down until
+  some left Ctrl happened to cancel it.
+- Switching keyboard layout with the right-hand `Ctrl+Shift` hit this every single time,
+  and left the machine acting as though Ctrl were glued down: clicks became Ctrl-clicks,
+  Space scrolled instead of typing. Any Ctrl chord could do it; the layout switcher was
+  simply the one nobody could avoid.
+- Now only the *last* key of a chord is taken from the window underneath, and only while
+  the chord's modifiers are held. Modifiers are always passed through untouched, so
+  there is nothing to put back and nothing that can be stranded.
+- Left and right modifiers are told apart by virtual key code rather than by arithmetic
+  on overlapping scan-code sets, which is both correct and considerably less clever.
+- Text is delivered with `SendInput` instead of `keybd_event`, with the extended flag set
+  where it belongs, and every injected event is stamped so the hook can recognise the
+  app's own keystrokes and ignore them.
+- Before each paste, any modifier Windows believes is held that was never physically
+  pressed is released. Nothing here creates those any more, but other programs do, and a
+  stray Shift turns `Ctrl+V` into a different command.
+
+**The hotkey stops disappearing**
+
+- Recording no longer starts inside the hook procedure. Windows silently unhooks a
+  low-level keyboard hook whose callback overruns `LowLevelHooksTimeout`, 300 ms by
+  default, and opening a microphone takes longer than that on its own - so the app went
+  on looking healthy while its hotkey had quietly stopped working. The procedure now
+  records the key and returns; everything else happens on a worker thread.
+- Hold-to-talk ends on the real key-up rather than on a 20 ms poll, so the two polling
+  threads per recording are gone.
+- Whether a recording is open is asked of the recorder rather than remembered by the
+  hotkey, so a recording that ended by itself - too short to keep, a microphone that
+  failed - no longer leaves the toggle inverted for one press.
+
+**Text**
+
+- `output: type` sends characters rather than keystrokes, so what arrives no longer
+  depends on the layout that happens to be active. Dictating Russian into a window while
+  the layout was English produced nothing usable.
+
+**The missing signature**
+
+- The installer now says, on a page of its own before anything is written, that the
+  package is unsigned and why: a certificate costs a few hundred dollars a year and this
+  project charges nobody anything. Better read there than discovered afterwards.
+- Both the installer page and the README name the exact folder to exclude for each way of
+  installing, and link to Microsoft's false-positive form. Defender does flag unsigned
+  PyInstaller builds — `Trojan:Win32/Wacatac` and `Trojan:Win32/Bearfoos` are the usual
+  verdicts — and it will quarantine the program or stop it mid-run. Reporting a detection
+  is what eventually clears it for everyone.
+
 ### 2026-08-27 - Defaults, models and the panel
 
 **Dictation**

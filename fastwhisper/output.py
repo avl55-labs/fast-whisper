@@ -5,12 +5,16 @@ import logging
 import threading
 import time
 
-import keyboard
 import pyperclip
+
+from . import keys
 
 log = logging.getLogger(__name__)
 
 _clipboard_lock = threading.Lock()
+
+VK_CONTROL = 0x11
+VK_V = 0x56
 
 
 def _set_clipboard(text: str) -> None:
@@ -34,15 +38,20 @@ def paste(text: str, restore_clipboard: bool = False) -> None:
     """Puts the text on the clipboard and sends Ctrl+V to the focused window.
 
     The text is left on the clipboard afterwards by default. A paste can miss - the window
-    lost focus, the application ignores synthetic Ctrl+V - and then the only copy of what
+    lost focus, the application ignores a synthetic Ctrl+V - and then the only copy of what
     you just said would be gone.
+
+    Any modifier some other program has left held down is released first. Ctrl+V with a
+    stray Shift on top is Ctrl+Shift+V, which pastes as plain text in some editors and
+    does something else entirely in others.
     """
     with _clipboard_lock:
         previous = _get_clipboard() if restore_clipboard else None
         _set_clipboard(text)
+        keys.release_stuck_modifiers()
         # Give the target window a moment; some apps ignore a paste sent too early.
         time.sleep(0.05)
-        keyboard.send("ctrl+v")
+        keys.tap(VK_CONTROL, VK_V)
         if previous is not None:
             # Restore only after the paste had time to read the clipboard.
             time.sleep(0.4)
@@ -53,8 +62,14 @@ def paste(text: str, restore_clipboard: bool = False) -> None:
 
 
 def type_text(text: str) -> None:
-    """Types the text key by key. Slower, but works where Ctrl+V is blocked."""
-    keyboard.write(text, delay=0.005)
+    """Types the text character by character. Slower, but works where Ctrl+V is blocked.
+
+    The characters are sent as themselves rather than as keystrokes, so what arrives does
+    not depend on the keyboard layout that happens to be active. Dictating Russian into a
+    window while the layout is English used to produce nothing usable.
+    """
+    keys.release_stuck_modifiers()
+    keys.type_unicode(text)
 
 
 def to_clipboard(text: str) -> None:

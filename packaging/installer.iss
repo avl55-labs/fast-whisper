@@ -3,7 +3,7 @@
 ; Installs per-user into LocalAppData, so no admin rights and no UAC prompt.
 
 #define AppName "FastWhisper"
-#define AppVersion "0.1.0"
+#define AppVersion "0.1.1"
 #define AppPublisher "FastWhisper"
 #define AppURL "https://github.com/avl55-labs/fast-whisper"
 #define AppExe "FastWhisper.exe"
@@ -23,6 +23,9 @@ PrivilegesRequired=lowest
 OutputDir=..\dist
 OutputBaseFilename=FastWhisper-{#AppVersion}-setup
 SetupIconFile=app.ico
+; Says plainly that the package is unsigned, what Defender may do about it, and which
+; folder to exclude. Better read before the install than discovered after it.
+InfoBeforeFile=before-install.txt
 UninstallDisplayIcon={app}\{#AppExe}
 Compression=lzma2/max
 SolidCompression=yes

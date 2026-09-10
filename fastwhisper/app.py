@@ -6,7 +6,7 @@ import threading
 import time
 from typing import Callable
 
-from . import history, sounds
+from . import history, keys, sounds
 from .audio import SILENCE_PEAK, Recorder, RecordingError, duration, normalize, peak
 from .config import Config
 from .hotkey import HotkeyError, HotkeyListener
@@ -62,6 +62,10 @@ class FastWhisperApp:
             on_start=self.start_recording,
             on_stop=self.stop_recording,
             on_cancel=self.cancel_recording,
+            # The recorder is the authority on whether a recording is open, so a toggle
+            # cannot fall out of step with one that ended by itself - too short to keep,
+            # or a microphone that failed.
+            is_active=lambda: self.recorder.is_recording,
         )
         try:
             self.listener.start()
@@ -74,6 +78,8 @@ class FastWhisperApp:
             self.listener.stop()
         if self.recorder.is_recording:
             self.recorder.stop()
+        keys.release_stuck_modifiers()
+        keys.stop()
 
     def reload_hotkey(self) -> None:
         self._register_hotkey()

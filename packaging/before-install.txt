@@ -1,0 +1,35 @@
+Windows may warn about this program, or take it away
+====================================================
+
+FastWhisper is not code-signed. A certificate costs a few hundred dollars a
+year, this project charges nobody anything, and there is no budget for one yet.
+That is the whole reason, and it has two consequences worth knowing before you
+install.
+
+SmartScreen warns about an unknown publisher when you run the installer.
+Choose "More info", then "Run anyway".
+
+Microsoft Defender sometimes decides that an unsigned PyInstaller program is
+Trojan:Win32/Wacatac or Trojan:Win32/Bearfoos. Both are false positives from a
+machine-learning heuristic - it is reacting to how the program was packaged,
+not to anything in it. Defender may quarantine FastWhisper, or stop it while it
+is running.
+
+If that happens, add the install folder to the Defender exclusion list. In
+PowerShell, as an administrator:
+
+    Add-MpPreference -ExclusionPath "$env:LOCALAPPDATA\Programs\FastWhisper"
+
+The folders, depending on how you got FastWhisper:
+
+    %LOCALAPPDATA%\Programs\FastWhisper     this installer
+    %ProgramFiles%\FastWhisper              the MSI
+    <repository>\dist\FastWhisper           built from source
+
+Reporting the detection is what eventually clears it for everyone:
+https://www.microsoft.com/en-us/wdsi/filesubmission
+
+What is offered instead of a signature: every line of source is public,
+including the scripts that build this exact installer; every release lists the
+SHA-256 of its files; and you can build your own copy in a few minutes and sign
+it with your own certificate.
