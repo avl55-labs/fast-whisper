@@ -26,7 +26,9 @@ from .widgets import (
     MUTED,
     TEXT,
     Button,
+    Card,
     Gauge,
+    Switch,
 )
 
 log = logging.getLogger(__name__)
@@ -83,6 +85,17 @@ class SetupWindow:
         body.pack(fill="both", expand=True, padx=32, pady=(14, 6))
         for info in models.FEATURED:
             self._option(body, info)
+
+        # Asked here rather than buried in the settings, because this is the moment the
+        # application first talks to the network and the one time anybody is watching.
+        options = tk.Frame(self.win, bg=BG)
+        options.pack(fill="x", padx=32, pady=(10, 0))
+        _row, slot = Card(options).row(
+            _("Tell me when a new version is released"),
+            _("Checks GitHub once a day. Nothing about you or this machine is sent, and "
+              "nothing is installed without you."),
+        )
+        Switch(slot, self.cfg.update_check, self._set_update_check).pack()
 
         footer = tk.Frame(self.win, bg=BG)
         footer.pack(fill="x", padx=32, pady=(6, 24))
@@ -153,6 +166,13 @@ class SetupWindow:
         self.win.geometry(f"+{max(0, x)}+{max(0, y)}")
 
     # ---------- selection ----------
+
+    def _set_update_check(self, value: bool) -> None:
+        self.cfg.update_check = value
+        try:
+            self.cfg.save()
+        except OSError:
+            log.debug("could not save the update setting", exc_info=True)
 
     def _select(self, name: str) -> None:
         self.selected = name

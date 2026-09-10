@@ -60,12 +60,27 @@ class Card(tk.Frame):
 
         text = tk.Frame(row, bg=CARD)
         text.pack(side="left", fill="x", expand=True)
-        tk.Label(text, text=title, bg=CARD, fg=TEXT, font=FONT, anchor="w").pack(fill="x")
+        title_label = tk.Label(text, text=title, bg=CARD, fg=TEXT, font=FONT, anchor="w")
+        title_label.pack(fill="x")
+        subtitle_label = tk.Label(
+            text, text=subtitle, bg=CARD, fg=MUTED, font=FONT_SMALL, anchor="w",
+            justify="left", wraplength=wrap,
+        )
         if subtitle:
-            tk.Label(
-                text, text=subtitle, bg=CARD, fg=MUTED, font=FONT_SMALL, anchor="w",
-                justify="left", wraplength=wrap,
-            ).pack(fill="x")
+            subtitle_label.pack(fill="x")
+
+        def set_subtitle(value: str) -> None:
+            """Lets a caller keep a row's second line up to date after it is built."""
+            subtitle_label.configure(text=value)
+            if value:
+                if not subtitle_label.winfo_ismapped():
+                    subtitle_label.pack(fill="x")
+            else:
+                subtitle_label.pack_forget()
+
+        row.title_label = title_label
+        row.subtitle_label = subtitle_label
+        row.set_subtitle = set_subtitle
 
         slot = tk.Frame(row, bg=CARD)
         slot.pack(side="right", padx=(12, 0))

@@ -8,13 +8,13 @@
   it themselves: it needs no administrator rights and puts everything under the profile.
 
   Build:   packaging\build-msi.ps1
-  Deploy:  msiexec /i FastWhisper-0.1.1.msi /qn
-           msiexec /i FastWhisper-0.1.1.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-  Remove:  msiexec /x FastWhisper-0.1.1.msi /qn
+  Deploy:  msiexec /i FastWhisper-0.1.2.msi /qn
+           msiexec /i FastWhisper-0.1.2.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+  Remove:  msiexec /x FastWhisper-0.1.2.msi /qn
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <?define ProductName = "FastWhisper" ?>
-  <?define ProductVersion = "0.1.1" ?>
+  <?define ProductVersion = "0.1.2" ?>
   <?define Manufacturer = "avl55-labs" ?>
 
   <Package
@@ -44,6 +44,9 @@
          outside the program directory. -->
     <Property Id="AUTOSTART" Value="0" />
     <Property Id="MODELDIR" Secure="yes" />
+    <!-- Off by default here: on a managed network versions change when the administrator
+         says so, not when the application notices a release. -->
+    <Property Id="UPDATECHECK" Value="0" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="$(ProductName)" />
@@ -96,6 +99,19 @@
             Name="ModelDir"
             Type="string"
             Value="[MODELDIR]"
+            KeyPath="yes" />
+      </Component>
+
+      <!-- On a managed network the administrator decides when versions change, so this
+           package switches the update check off for everyone on the machine. Pass
+           UPDATECHECK=1 to leave it to the user instead. -->
+      <Component Id="UpdatePolicy" Directory="INSTALLFOLDER" Guid="6b1f9c84-70a2-4d35-ae6c-58f24b0d9e17">
+        <RegistryValue
+            Root="HKLM"
+            Key="Software\$(Manufacturer)\$(ProductName)"
+            Name="UpdateCheck"
+            Type="integer"
+            Value="[UPDATECHECK]"
             KeyPath="yes" />
       </Component>
     </ComponentGroup>

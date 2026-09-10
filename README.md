@@ -99,9 +99,9 @@ every machine with the settings you chose, needing nobody to click anything. Gro
 installs run as SYSTEM with no user signed in, which is exactly what this package expects.
 
 ```powershell
-msiexec /i FastWhisper-0.1.1.msi /qn
-msiexec /i FastWhisper-0.1.1.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-msiexec /x FastWhisper-0.1.1.msi /qn
+msiexec /i FastWhisper-0.1.2.msi /qn
+msiexec /i FastWhisper-0.1.2.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+msiexec /x FastWhisper-0.1.2.msi /qn
 ```
 
 | Property | Effect |
@@ -295,7 +295,7 @@ cd fast-whisper
 powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 ```
 
-The result is `dist\FastWhisper\FastWhisper.exe` and `dist\FastWhisper-0.1.1-setup.exe`.
+The result is `dist\FastWhisper\FastWhisper.exe` and `dist\FastWhisper-0.1.2-setup.exe`.
 
 To run without building:
 

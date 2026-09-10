@@ -3,7 +3,7 @@
 ; Installs per-user into LocalAppData, so no admin rights and no UAC prompt.
 
 #define AppName "FastWhisper"
-#define AppVersion "0.1.1"
+#define AppVersion "0.1.2"
 #define AppPublisher "FastWhisper"
 #define AppURL "https://github.com/avl55-labs/fast-whisper"
 #define AppExe "FastWhisper.exe"
@@ -29,6 +29,12 @@ InfoBeforeFile=before-install.txt
 UninstallDisplayIcon={app}\{#AppExe}
 Compression=lzma2/max
 SolidCompression=yes
+; Lets an update run over a copy that is already running: Windows is asked which programs
+; hold the files, they are closed at the moment they are actually replaced, and started
+; again afterwards. The default filter misses PyInstaller's .pyd extensions.
+CloseApplications=yes
+RestartApplications=yes
+CloseApplicationsFilter=*.exe,*.dll,*.pyd,*.chm
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

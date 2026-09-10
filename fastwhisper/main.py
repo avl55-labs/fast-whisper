@@ -7,7 +7,9 @@ import logging.handlers
 import os
 import sys
 import threading
+import time
 
+from . import updater
 from .config import LOG_PATH, Config
 from .single_instance import acquire
 
@@ -108,6 +110,23 @@ def main() -> int:
             app.preload()
 
         ui.open_setup(chosen)
+
+    def watch_for_updates() -> None:
+        """Asks GitHub about once a day, and says so once. Never installs anything."""
+        time.sleep(45)  # let the model finish loading; this is never urgent
+        announced = ""
+        while True:
+            release = updater.check(cfg)
+            if (
+                release is not None
+                and release.version != cfg.update_skip_version
+                and release.version != announced
+            ):
+                announced = release.version
+                tray.on_update(release)
+            time.sleep(6 * 60 * 60)
+
+    threading.Thread(target=watch_for_updates, name="updates", daemon=True).start()
 
     tray_thread = threading.Thread(target=tray.run, name="tray", daemon=True)
     tray_thread.start()

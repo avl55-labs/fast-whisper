@@ -12,7 +12,7 @@ import subprocess
 import pystray
 from pystray import Menu, MenuItem
 
-from . import output
+from . import output, updater
 from .config import CONFIG_PATH, Config
 from .i18n import _
 from .icons import make_icon
@@ -57,14 +57,22 @@ class Tray:
             log.debug("tray update failed", exc_info=True)
 
     def _menu(self) -> Menu:
-        return Menu(
+        items = [
             MenuItem(lambda item: self._title(), None, enabled=False),
             Menu.SEPARATOR,
             MenuItem(_("Settings..."), self._open_settings, default=True),
             MenuItem(_("Copy last result"), self._copy_last),
-            Menu.SEPARATOR,
-            MenuItem(_("Quit"), self._quit),
-        )
+        ]
+        if updater.pending is not None:
+            items += [
+                Menu.SEPARATOR,
+                MenuItem(
+                    _("Update to {version}...").format(version=updater.pending.version),
+                    self._open_updates,
+                ),
+            ]
+        items += [Menu.SEPARATOR, MenuItem(_("Quit"), self._quit)]
+        return Menu(*items)
 
     # ---------- actions ----------
 
@@ -78,11 +86,38 @@ class Tray:
         except Exception:
             log.debug("could not rebuild the tray menu", exc_info=True)
 
-    def _open_settings(self) -> None:
+    def rebuild_menu(self) -> None:
+        """Rebuilds the menu without disturbing the status line above it."""
+        try:
+            self.icon.menu = self._menu()
+            self.icon.update_menu()
+        except Exception:
+            log.debug("could not rebuild the tray menu", exc_info=True)
+
+    def on_update(self, release) -> None:  # noqa: ANN001 - updater.Release
+        """Says once, quietly, that a newer version exists. Nothing is installed."""
+        self.rebuild_menu()
+        try:
+            self.icon.notify(
+                _("Version {version} is available.").format(version=release.version),
+                "FastWhisper",
+            )
+        except Exception:
+            log.debug("could not show the update notification", exc_info=True)
+
+    def _show_settings(self, page: str) -> None:
+        # Kept separate from the menu callbacks: pystray hands its actions the icon and
+        # the item, which a default argument would quietly swallow.
         if self.ui is None:
             _open(CONFIG_PATH)
             return
-        self.ui.open_settings(self.app, self._capture_hotkey, self.refresh_menu)
+        self.ui.open_settings(self.app, self._capture_hotkey, self.refresh_menu, page=page)
+
+    def _open_settings(self) -> None:
+        self._show_settings("general")
+
+    def _open_updates(self) -> None:
+        self._show_settings("about")
 
     def _capture_hotkey(self) -> None:
         """Opens the capture window, with the current hotkey disarmed meanwhile."""

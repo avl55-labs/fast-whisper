@@ -271,4 +271,40 @@ RU = {
     "~{value} s": "~{value} с",
     "{author} · {packager} · {languages} · {latency}":
         "{author} · {packager} · {languages} · {latency}",
+
+    # ---- updates ----
+    "UPDATES": "ОБНОВЛЕНИЯ",
+    "Check for updates": "Проверять обновления",
+    "Asks GitHub once a day whether a newer version exists. Nothing about you or this "
+    "machine is sent.":
+        "Раз в сутки спрашивает у GitHub, не вышла ли версия новее. Ничего о вас и об "
+        "этом компьютере не отправляется.",
+    "Switched off for this machine by your administrator.":
+        "Отключено для этого компьютера администратором.",
+    "Status": "Состояние",
+    "Check now": "Проверить сейчас",
+    "Checking...": "Проверяем...",
+    "Download and update": "Скачать и обновить",
+    "Release notes": "Что нового",
+    "FastWhisper {version} - this is the latest version.":
+        "FastWhisper {version} — новее пока нет.",
+    "Version {version} is available. You have {current}.":
+        "Доступна версия {version}. У вас {current}.",
+    "Version {version} is available.": "Доступна версия {version}.",
+    "Update to {version}...": "Обновить до {version}...",
+    "Downloading... {percent}%": "Загрузка... {percent}%",
+    "Starting the installer...": "Запускаем установщик...",
+    "Could not download the update: {error}":
+        "Не удалось скачать обновление: {error}",
+    "Could not start the installer: {error}":
+        "Не удалось запустить установщик: {error}",
+    "Tell me when a new version is released": "Сообщать о выходе новой версии",
+    "Checks GitHub once a day. Nothing about you or this machine is sent, and nothing "
+    "is installed without you.":
+        "Раз в сутки проверяет GitHub. Ничего о вас и об этом компьютере не "
+        "отправляется, и ничего не устанавливается без вашего ведома.",
+    "Audio is held in memory and discarded after recognition. Apart from the update "
+    "check, the only network request the app makes is downloading a model.":
+        "Звук живёт только в памяти и стирается после распознавания. Кроме проверки "
+        "обновлений, единственный сетевой запрос приложения — загрузка модели.",
 }

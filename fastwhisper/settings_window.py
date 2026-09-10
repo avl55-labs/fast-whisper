@@ -13,7 +13,9 @@ import threading
 import tkinter as tk
 from typing import Callable
 
-from . import audio, autostart, history, models, output
+import webbrowser
+
+from . import __version__, audio, autostart, history, models, output, updater
 from .config import CONFIG_PATH, LOG_PATH, Config, app_dir
 from . import i18n
 from .i18n import _
@@ -82,6 +84,7 @@ class SettingsWindow:
         on_language_change: Callable[[], None] | None = None, page: str = "general",
     ) -> None:
         if cls._current is not None and cls._current.alive:
+            cls._current.show(page)
             cls._current.focus()
             return
         cls._current = cls(root, cfg, app, capture, on_language_change, page)
@@ -419,8 +422,6 @@ class SettingsWindow:
         self.history_box.pack(fill="both", expand=True)
 
     def _page_about(self, parent: tk.Frame) -> None:
-        from . import __version__
-
         section_label(parent, _("ABOUT"))
         card = Card(parent)
         _row, slot = card.row(_("Version"), f"FastWhisper {__version__}")
@@ -430,12 +431,117 @@ class SettingsWindow:
         _row, slot = card.row(_("Log file"), str(LOG_PATH))
         Button(slot, _("Open"), lambda: _open(LOG_PATH)).pack()
 
+        section_label(parent, _("UPDATES"))
+        card = Card(parent)
+        managed = not updater.allowed_by_policy()
+        _row, slot = card.row(
+            _("Check for updates"),
+            _("Switched off for this machine by your administrator.") if managed else
+            _("Asks GitHub once a day whether a newer version exists. Nothing about you "
+              "or this machine is sent."),
+        )
+        if not managed:
+            Switch(slot, self.cfg.update_check, self._set_update_check).pack()
+
+            self._update_row, self._update_slot = card.row(_("Status"), "")
+            self._update_button = Button(self._update_slot, _("Check now"), self._check_updates)
+            self._update_button.pack()
+            self._show_update(updater.pending)
+
         section_label(parent, _("PRIVACY"))
         Card(parent).row(
             _("Nothing leaves this machine"),
-            "Audio is held in memory and discarded after recognition. The only network "
-            "request the app makes is downloading a model.",
+            _("Audio is held in memory and discarded after recognition. Apart from the "
+              "update check, the only network request the app makes is downloading a "
+              "model."),
         )
+
+    # ---------- updates ----------
+
+    def _set_update_check(self, value: bool) -> None:
+        self.cfg.update_check = value
+        self._save()
+
+    def _update_status(self, text: str) -> None:
+        """Safe to call from a worker thread: Tk work is posted back to its own thread."""
+        def apply() -> None:
+            if self.alive:
+                try:
+                    self._update_row.set_subtitle(text)
+                except tk.TclError:
+                    pass
+        self.win.after(0, apply)
+
+    def _show_update(self, release) -> None:  # noqa: ANN001 - updater.Release or None
+        """Puts the result of a check on the page, with the button it deserves."""
+        if release is None:
+            self._update_row.set_subtitle(
+                _("FastWhisper {version} - this is the latest version.").format(
+                    version=__version__
+                )
+            )
+            self._update_button.configure(text=_("Check now"))
+            self._update_button.command = self._check_updates
+            return
+
+        self._update_row.set_subtitle(
+            _("Version {version} is available. You have {current}.").format(
+                version=release.version, current=__version__
+            )
+        )
+        self._update_button.configure(text=_("Download and update"))
+        self._update_button.command = lambda: self._download_update(release)
+        if not any(
+            isinstance(child, Button) and child is not self._update_button
+            for child in self._update_slot.winfo_children()
+        ):
+            Button(
+                self._update_slot, _("Release notes"),
+                lambda: webbrowser.open(release.page),
+            ).pack(side="right", padx=(0, 6))
+
+    def _check_updates(self) -> None:
+        self._update_button.set_enabled(False)
+        self._update_status(_("Checking..."))
+
+        def work() -> None:
+            release = updater.check(self.cfg, force=True)
+
+            def done() -> None:
+                if not self.alive:
+                    return
+                self._update_button.set_enabled(True)
+                self._show_update(release)
+
+            self.win.after(0, done)
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _download_update(self, release) -> None:  # noqa: ANN001 - updater.Release
+        self._update_button.set_enabled(False)
+
+        def progress(fraction: float) -> None:
+            self._update_status(_("Downloading... {percent}%").format(percent=int(fraction * 100)))
+
+        def work() -> None:
+            try:
+                installer = updater.download(release, progress)
+            except Exception as exc:
+                log.exception("the update could not be downloaded")
+                self._update_status(
+                    _("Could not download the update: {error}").format(error=exc)
+                )
+                self.win.after(0, lambda: self._update_button.set_enabled(True))
+                return
+            self._update_status(_("Starting the installer..."))
+            try:
+                updater.launch(installer)
+            except Exception as exc:
+                log.exception("the installer would not start")
+                self._update_status(_("Could not start the installer: {error}").format(error=exc))
+                self.win.after(0, lambda: self._update_button.set_enabled(True))
+
+        threading.Thread(target=work, daemon=True).start()
 
     # ---------- actions ----------
 

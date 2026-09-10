@@ -69,6 +69,13 @@ class Config:
     cpu_threads: int = 0
     # Append every result to history.jsonl.
     save_history: bool = True
+    # Ask GitHub once a day whether a newer version exists. Nothing is reported either
+    # way; a managed install can switch it off for everyone through the registry.
+    update_check: bool = True
+    # When the last check happened, so a restart does not mean another request.
+    update_last_check: float = 0.0
+    # A version the user asked not to be told about again.
+    update_skip_version: str = ""
     # Optional prompt that biases the model towards your terms and names.
     prompt: str = ""
     # Names and jargon the model should prefer; joined into the prompt before each run.

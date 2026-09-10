@@ -26,7 +26,7 @@ if ($iscc) {
     Write-Host 'Building the installer...'
     & $iscc packaging\installer.iss
     if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
-    Write-Host "Done: dist\FastWhisper-0.1.1-setup.exe"
+    Write-Host "Done: dist\FastWhisper-0.1.2-setup.exe"
 } else {
     Write-Warning 'Inno Setup 6 not found, skipping the installer. Install it with: winget install JRSoftware.InnoSetup'
     Write-Host "Done: dist\FastWhisper\FastWhisper.exe"
