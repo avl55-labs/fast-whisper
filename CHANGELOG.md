@@ -10,6 +10,9 @@ What changed, newest first.
   lives in *Settings → About*.
 - The MSI turns the check off for the whole machine, since a managed network updates on
   the administrator's schedule. `UPDATECHECK=1` gives it back.
+- You can tell it to skip a version and stop offering that one.
+- **No MSI is attached to this release** - the last published one is in 0.1.0. Build it
+  from source in the meantime; see the README.
 - Downloads are checked against the size and, where a release publishes one, the SHA-256,
   and are marked as coming from the internet so SmartScreen sees them as it would any
   other download.

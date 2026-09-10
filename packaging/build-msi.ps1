@@ -8,7 +8,12 @@
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$version = "0.1.0"
+
+# Read from the package rather than repeating it here: a hardcoded number sat at 0.1.0
+# through two releases and would have shipped a 0.1.2 payload under the wrong name.
+$match = Select-String -Path "$root\fastwhisper\__init__.py" -Pattern '__version__\s*=\s*"([^"]+)"'
+if (-not $match) { throw "could not read __version__ from fastwhisper\__init__.py" }
+$version = $match.Matches[0].Groups[1].Value
 
 if (-not (Test-Path "$root\dist\FastWhisper\FastWhisper.exe")) {
     throw "dist\FastWhisper is missing - run packaging\build.ps1 first."

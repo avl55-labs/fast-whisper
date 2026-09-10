@@ -286,6 +286,7 @@ RU = {
     "Checking...": "Проверяем...",
     "Download and update": "Скачать и обновить",
     "Release notes": "Что нового",
+    "Skip this version": "Пропустить эту версию",
     "FastWhisper {version} - this is the latest version.":
         "FastWhisper {version} — новее пока нет.",
     "Version {version} is available. You have {current}.":

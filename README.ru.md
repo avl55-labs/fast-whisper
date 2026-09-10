@@ -154,13 +154,17 @@ MSI выключает проверку для всей машины: в упр�
 
 ## Для организаций
 
-`FastWhisper-x.y.z.msi` — пакет на всю машину для Group Policy или Intune. Ставится молча,
+У FastWhisper есть MSI на всю машину — для Group Policy или Intune. Ставится молча,
 лицензий считать не надо, данные машину не покидают.
 
+> **В 0.1.2 не публиковался.** Последний выложенный MSI — в [v0.1.0][rel]. Пока не вышел
+> следующий, соберите сами: см. [Сборка из исходников](#сборка-из-исходников), это пара
+> минут, и содержимое то же самое, что в установщике выше.
+
 ```powershell
-msiexec /i FastWhisper-0.1.2.msi /qn
-msiexec /i FastWhisper-0.1.2.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-msiexec /x FastWhisper-0.1.2.msi /qn
+msiexec /i FastWhisper-x.y.z.msi /qn
+msiexec /i FastWhisper-x.y.z.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+msiexec /x FastWhisper-x.y.z.msi /qn
 ```
 
 | Свойство | Что делает |
@@ -208,6 +212,13 @@ cd fast-whisper
 powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 ```
 
+Чтобы собрать ещё и MSI, поставьте [WiX 5][wix] и запустите второй скрипт:
+
+```powershell
+dotnet tool install --global wix --version 5.0.2
+powershell -ExecutionPolicy Bypass -File packaging\build-msi.ps1
+```
+
 Запустить без сборки:
 
 ```powershell
@@ -242,4 +253,5 @@ MIT. См. [LICENSE](LICENSE).
 
 [fw]: https://github.com/SYSTRAN/faster-whisper
 [inno]: https://jrsoftware.org/isinfo.php
+[wix]: https://wixtoolset.org/
 [rel]: https://github.com/avl55-labs/fast-whisper/releases

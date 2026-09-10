@@ -154,13 +154,18 @@ versions change when the administrator says so.
 
 ## For organisations
 
-`FastWhisper-x.y.z.msi` is a per-machine package for Group Policy or Intune. It installs
-silently, with no licences to count and no data leaving the machines.
+FastWhisper has a per-machine MSI for Group Policy or Intune. It installs silently, with
+no licences to count and no data leaving the machines.
+
+> **Not published in 0.1.2.** The last released MSI is the one attached to
+> [v0.1.0][rel]. Until the next one is published, build it yourself — see
+> [Build from source](#build-from-source); it takes a couple of minutes and the payload
+> is identical to the installer above.
 
 ```powershell
-msiexec /i FastWhisper-0.1.2.msi /qn
-msiexec /i FastWhisper-0.1.2.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-msiexec /x FastWhisper-0.1.2.msi /qn
+msiexec /i FastWhisper-x.y.z.msi /qn
+msiexec /i FastWhisper-x.y.z.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+msiexec /x FastWhisper-x.y.z.msi /qn
 ```
 
 | Property | Effect |
@@ -208,6 +213,13 @@ cd fast-whisper
 powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 ```
 
+For the MSI as well, add [WiX 5][wix] and run the second script:
+
+```powershell
+dotnet tool install --global wix --version 5.0.2
+powershell -ExecutionPolicy Bypass -File packaging\build-msi.ps1
+```
+
 To run it without building:
 
 ```powershell
@@ -240,4 +252,5 @@ MIT. See [LICENSE](LICENSE).
 
 [fw]: https://github.com/SYSTRAN/faster-whisper
 [inno]: https://jrsoftware.org/isinfo.php
+[wix]: https://wixtoolset.org/
 [rel]: https://github.com/avl55-labs/fast-whisper/releases

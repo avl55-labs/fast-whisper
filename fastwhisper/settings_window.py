@@ -444,8 +444,6 @@ class SettingsWindow:
             Switch(slot, self.cfg.update_check, self._set_update_check).pack()
 
             self._update_row, self._update_slot = card.row(_("Status"), "")
-            self._update_button = Button(self._update_slot, _("Check now"), self._check_updates)
-            self._update_button.pack()
             self._show_update(updater.pending)
 
         section_label(parent, _("PRIVACY"))
@@ -473,15 +471,18 @@ class SettingsWindow:
         self.win.after(0, apply)
 
     def _show_update(self, release) -> None:  # noqa: ANN001 - updater.Release or None
-        """Puts the result of a check on the page, with the button it deserves."""
+        """Puts the result of a check on the page, with the buttons it deserves."""
+        for child in self._update_slot.winfo_children():
+            child.destroy()
+
         if release is None:
             self._update_row.set_subtitle(
                 _("FastWhisper {version} - this is the latest version.").format(
                     version=__version__
                 )
             )
-            self._update_button.configure(text=_("Check now"))
-            self._update_button.command = self._check_updates
+            self._update_button = Button(self._update_slot, _("Check now"), self._check_updates)
+            self._update_button.pack(side="right")
             return
 
         self._update_row.set_subtitle(
@@ -489,16 +490,28 @@ class SettingsWindow:
                 version=release.version, current=__version__
             )
         )
-        self._update_button.configure(text=_("Download and update"))
-        self._update_button.command = lambda: self._download_update(release)
-        if not any(
-            isinstance(child, Button) and child is not self._update_button
-            for child in self._update_slot.winfo_children()
-        ):
-            Button(
-                self._update_slot, _("Release notes"),
-                lambda: webbrowser.open(release.page),
-            ).pack(side="right", padx=(0, 6))
+        # Packed right to left, so the first one placed sits furthest right.
+        self._update_button = Button(
+            self._update_slot, _("Download and update"),
+            lambda: self._download_update(release), primary=True,
+        )
+        self._update_button.pack(side="right")
+        Button(
+            self._update_slot, _("Release notes"), lambda: webbrowser.open(release.page),
+        ).pack(side="right", padx=(0, 6))
+        Button(
+            self._update_slot, _("Skip this version"), lambda: self._skip_update(release),
+        ).pack(side="right", padx=(0, 6))
+
+    def _skip_update(self, release) -> None:  # noqa: ANN001 - updater.Release
+        """Stops this one version being offered again, here and in the tray."""
+        self.cfg.update_skip_version = release.version
+        self._save()
+        updater.pending = None
+        self._show_update(None)
+        if self.on_language_change is not None:
+            # The same callback the tray uses to rebuild its menu.
+            self.on_language_change()
 
     def _check_updates(self) -> None:
         self._update_button.set_enabled(False)
