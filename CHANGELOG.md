@@ -2,6 +2,19 @@
 
 What changed, newest first.
 
+## Unreleased
+
+- **Whisper no longer signs off for you.** Dictate, stop, and the result would sometimes
+  end with «Продолжение следует...» or "Thank you for watching" — caption boilerplate the
+  model has memorised and falls back on when it is handed a stretch with no speech in it.
+  Those endings are now removed before the text reaches your window. The well-known
+  Russian and English phrases are built in, credit lines and sound tags are matched by
+  shape, and `boilerplate_extra` in the settings file takes your own. Set
+  `strip_boilerplate` to `false` to keep everything.
+  - Only the end of a result is examined, matching is on whole words, and every removal
+    is written to the log. Checked against 1663 real dictations: 21 corrected, the rest
+    untouched.
+
 ## 0.1.2 - 2026-09-10
 
 - FastWhisper can tell you when a newer version is released. It asks GitHub once a day,

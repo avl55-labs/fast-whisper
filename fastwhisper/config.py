@@ -76,6 +76,11 @@ class Config:
     update_last_check: float = 0.0
     # A version the user asked not to be told about again.
     update_skip_version: str = ""
+    # Strip the caption boilerplate Whisper invents when it hears no speech - the
+    # «Продолжение следует...» and "Thank you for watching" family. See cleanup.py.
+    strip_boilerplate: bool = True
+    # Extra phrases to strip from the end, on top of the built-in list.
+    boilerplate_extra: list[str] = field(default_factory=list)
     # Optional prompt that biases the model towards your terms and names.
     prompt: str = ""
     # Names and jargon the model should prefer; joined into the prompt before each run.

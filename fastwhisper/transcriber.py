@@ -6,6 +6,7 @@ import threading
 
 import numpy as np
 
+from . import cleanup
 from .config import Config
 
 log = logging.getLogger(__name__)
@@ -66,4 +67,22 @@ class Transcriber:
             initial_prompt=self.cfg.initial_prompt(),
             condition_on_previous_text=False,
         )
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        spoken = list(segments)
+        text = " ".join(segment.text.strip() for segment in spoken).strip()
+
+        if not self.cfg.strip_boilerplate:
+            return text
+
+        text, removed = cleanup.strip_boilerplate(text, self.cfg.boilerplate_extra)
+        if removed and spoken:
+            # The model's own confidence in the phrase it invented, for tuning later. It
+            # is usually high, which is exactly why faster-whisper let it through: the
+            # library discards a window only when no_speech_prob is above its threshold
+            # AND avg_logprob is below another, and a memorised caption satisfies neither.
+            last = spoken[-1]
+            log.info(
+                "the invented tail came with no_speech=%.2f, avg_logprob=%.2f",
+                last.no_speech_prob,
+                last.avg_logprob,
+            )
+        return text
