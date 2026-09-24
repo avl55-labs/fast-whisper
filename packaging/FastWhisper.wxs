@@ -8,13 +8,13 @@
   it themselves: it needs no administrator rights and puts everything under the profile.
 
   Build:   packaging\build-msi.ps1
-  Deploy:  msiexec /i FastWhisper-0.1.2.msi /qn
-           msiexec /i FastWhisper-0.1.2.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
-  Remove:  msiexec /x FastWhisper-0.1.2.msi /qn
+  Deploy:  msiexec /i FastWhisper-0.1.3.msi /qn
+           msiexec /i FastWhisper-0.1.3.msi /qn AUTOSTART=1 MODELDIR="C:\ProgramData\FastWhisper\models"
+  Remove:  msiexec /x FastWhisper-0.1.3.msi /qn
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <?define ProductName = "FastWhisper" ?>
-  <?define ProductVersion = "0.1.2" ?>
+  <?define ProductVersion = "0.1.3" ?>
   <?define Manufacturer = "avl55-labs" ?>
 
   <Package

@@ -2,7 +2,7 @@
 
 What changed, newest first.
 
-## Unreleased
+## 0.1.3 - 2026-09-24
 
 - **Whisper no longer signs off for you.** Dictate, stop, and the result would sometimes
   end with «Продолжение следует...» or "Thank you for watching" — caption boilerplate the

@@ -3,7 +3,7 @@
 ; Installs per-user into LocalAppData, so no admin rights and no UAC prompt.
 
 #define AppName "FastWhisper"
-#define AppVersion "0.1.2"
+#define AppVersion "0.1.3"
 #define AppPublisher "FastWhisper"
 #define AppURL "https://github.com/avl55-labs/fast-whisper"
 #define AppExe "FastWhisper.exe"

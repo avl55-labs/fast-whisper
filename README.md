@@ -157,7 +157,7 @@ versions change when the administrator says so.
 FastWhisper has a per-machine MSI for Group Policy or Intune. It installs silently, with
 no licences to count and no data leaving the machines.
 
-> **Not published in 0.1.2.** The last released MSI is the one attached to
+> **Not published in 0.1.3.** The last released MSI is the one attached to
 > [v0.1.0][rel]. Until the next one is published, build it yourself — see
 > [Build from source](#build-from-source); it takes a couple of minutes and the payload
 > is identical to the installer above.
